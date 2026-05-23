@@ -36,9 +36,20 @@ export default function AdminSettingsPage() {
   const handleSave = async (group: string) => {
     setSaving(true);
     try {
+      const aiKeys = [
+        'ai_enabled', 'ai_provider',
+        'openai_api_key', 'openai_base_url', 'openai_model',
+        'gemini_api_key', 'gemini_base_url', 'gemini_model',
+        'deepseek_api_key', 'deepseek_base_url', 'deepseek_model'
+      ];
       const groupSettings = settings
-        .filter((s) => s.group === group)
-        .map((s) => ({ key: s.key, value: s.value || '', type: s.type, group: s.group }));
+        .filter((s) => s.group === group || (group === 'ai' && aiKeys.includes(s.key)))
+        .map((s) => ({
+          key: s.key,
+          value: s.value || '',
+          type: s.type,
+          group: aiKeys.includes(s.key) ? 'general' : s.group
+        }));
       await adminApi.updateSettings(groupSettings);
       toast.success('Settings saved!');
     } catch { toast.error('Failed to save'); }
