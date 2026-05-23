@@ -58,7 +58,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
   }, [editable, editor]);
 
   // AI Feature States
-  const [aiFeature, setAiFeature] = useState<'ask' | 'summarize' | 'flashcards' | 'quiz' | 'ocr' | 'translate' | null>(null);
+  const [aiFeature, setAiFeature] = useState<'ask' | 'summarize' | 'flashcards' | 'quiz' | 'ocr' | 'translate' | 'meaning' | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiResult, setAiResult] = useState<any>(null);
@@ -397,10 +397,33 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     }
   };
 
+  const handleWordMeaning = async () => {
+    if (!editor) return;
+    const selectedText = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, ' ').trim();
+    if (!selectedText) {
+      toast.error("Please highlight/select a word first to find its meaning!");
+      return;
+    }
+    setAiFeature('meaning');
+    setAiLoading(true);
+    setAiResult(null);
+    try {
+      const sysPrompt = "You are a professional dictionary and linguistics expert. For the given word, provide: 1. A phonetic pronunciation guide (using both IPA and intuitive phonetics like 'law-kee'). 2. Part of speech. 3. Concise academic meaning/definition. 4. A brief usage example. Output the response in beautiful, clean HTML using <h3>, <p>, and <ul> tags.";
+      const res = await runAICall(sysPrompt, `Word: "${selectedText}"`);
+      setAiResult(res);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to find word meaning.");
+      setAiFeature(null);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const ToolButton = ({ onClick, active, children, title, className = '' }: any) => (
     <button
       type="button"
       onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
       title={title}
       className={`p-1.5 rounded-lg transition-all duration-300 ${active ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'} ${className}`}
     >
@@ -552,6 +575,9 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
             </ToolButton>
             <ToolButton onClick={() => { setAiFeature('translate'); setAiResult(''); }} title="Check Grammar / Translate" className="hover:bg-cyan-100 hover:text-cyan-600 group">
               <Languages size={16} className="text-cyan-500 group-hover:text-cyan-600 group-hover:scale-110 transition-transform" />
+            </ToolButton>
+            <ToolButton onClick={handleWordMeaning} title="AI Dictionary (Highlight word first)" className="hover:bg-amber-100 hover:text-amber-600 group">
+              <BookOpen size={16} className="text-amber-500 group-hover:text-amber-600 group-hover:scale-110 transition-transform" />
             </ToolButton>
           </div>
 
@@ -1119,6 +1145,51 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Overlay 7: AI Dictionary / Word Meaning Drawer */}
+      {aiFeature === 'meaning' && (
+        <div className="absolute top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-md border-l border-slate-200/80 shadow-2xl z-20 p-5 flex flex-col justify-between animate-in slide-in-from-right duration-300">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-1 custom-scrollbar">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+              <h2 className="text-base font-extrabold flex items-center gap-1.5 text-amber-900 animate-pulse">
+                <BookOpen size={18} className="text-amber-600" /> AI Dictionary
+              </h2>
+              <button onClick={() => setAiFeature(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition">
+                <X size={16} />
+              </button>
+            </div>
+
+            {aiLoading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <div className="h-8 w-8 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
+                <p className="text-xs text-amber-700 font-bold animate-pulse">Consulting scholarly lexicons...</p>
+              </div>
+            ) : (
+              aiResult && (
+                <div className="space-y-4">
+                  <div className="prose prose-sm max-w-none text-slate-700 font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: aiResult }} />
+                  <button onClick={() => { navigator.clipboard.writeText(aiResult.replace(/<[^>]*>/g, '')); toast.success('Copied to clipboard!'); }} className="w-full py-2 bg-slate-50 border border-slate-100 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 animate-in fade-in">
+                    <Copy size={12} /> Copy Meaning
+                  </button>
+                </div>
+              )
+            )}
+          </div>
+
+          {aiResult && !aiLoading && (
+            <button
+              onClick={() => {
+                editor.chain().focus().insertContent(`<br/><hr/><h3>AI Dictionary Entry</h3>${aiResult}`).run();
+                setAiFeature(null);
+                toast.success('Entry appended to note!');
+              }}
+              className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-bold shadow-md shadow-amber-600/10 mt-4 shrink-0 transition"
+            >
+              Append Entry to Note
+            </button>
+          )}
         </div>
       )}
     </div>
