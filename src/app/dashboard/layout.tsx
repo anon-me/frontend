@@ -16,9 +16,7 @@ const userNav = [
   { href: '/dashboard/shared', label: 'Shared with Me', icon: Share2 },
   { href: '/dashboard/friends', label: 'Friends', icon: Users },
   { href: '/dashboard/files', label: 'My Files', icon: FolderOpen },
-  { href: '/dashboard/subscription', label: 'Subscription', icon: Crown },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

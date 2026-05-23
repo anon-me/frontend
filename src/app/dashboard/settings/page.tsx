@@ -579,39 +579,39 @@ export default function SettingsPage() {
         {/* Right Column (Span 1) */}
         <div className="space-y-6 flex flex-col h-full">
 
-          {/* Pro Plan Card */}
-          <Link href="/dashboard/subscription" className="block">
-            <div className="bg-gradient-to-br from-primary via-[#4335da] to-primary-container rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-primary/30 group cursor-pointer hover:shadow-primary/40 hover:-translate-y-1 transition-all">
+          {/* Academic Portfolio Tracker Card */}
+          <Link href="/dashboard/notes" className="block">
+            <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-900 rounded-3xl p-6 text-white relative overflow-hidden shadow-xl shadow-indigo-500/20 group cursor-pointer hover:shadow-indigo-500/30 hover:-translate-y-1 transition-all">
               <div className="absolute -top-4 -right-4 p-6 opacity-20 transform rotate-12 group-hover:rotate-45 group-hover:scale-110 transition-transform duration-500"><Sparkles size={100} /></div>
               <div className="relative z-10 block">
                 <div className="flex justify-between items-start mb-5">
                   <span className="inline-flex px-2.5 py-1 bg-white/20 rounded-full text-[9px] font-bold tracking-widest uppercase backdrop-blur-md border border-white/10">
-                    Current Plan
+                    Scholar Access
                   </span>
-                  <Sparkles className="text-white/80" size={20} />
+                  <GraduationCap className="text-white/80" size={20} />
                 </div>
-                <h2 className="text-3xl font-headline font-black mb-3 tracking-tight drop-shadow-sm">Pro Plan</h2>
-                <p className="text-white/80 font-medium mb-6 leading-relaxed text-xs">
-                  You are currently using the premium academic workspace.
+                <h2 className="text-3xl font-headline font-black mb-3 tracking-tight drop-shadow-sm">Academic Workspace</h2>
+                <p className="text-white/85 font-medium mb-6 leading-relaxed text-xs">
+                  Your academic account has full, unrestricted access to the NotExA study suite.
                 </p>
 
                 <ul className="space-y-3 mb-6">
                   <li className="flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="text-on-secondary-container" size={12} />
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="text-white" size={12} />
                     </div>
-                    <span className="font-semibold text-white/95 text-xs">Unlimited Storage</span>
+                    <span className="font-semibold text-white/95 text-xs">Unlimited Cloud Storage</span>
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <div className="w-5 h-5 rounded-full bg-secondary-container flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="text-on-secondary-container" size={12} />
+                    <div className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="text-white" size={12} />
                     </div>
-                    <span className="font-semibold text-white/95 text-xs">Team Workspaces</span>
+                    <span className="font-semibold text-white/95 text-xs">ADHD DopaCompanion Boosters</span>
                   </li>
                 </ul>
 
-                <button className="w-full py-3 bg-white text-primary rounded-xl text-sm font-bold shadow-md group-hover:bg-surface-container-lowest transition-colors">
-                  Manage Subscription
+                <button className="w-full py-3 bg-white text-indigo-700 rounded-xl text-sm font-bold shadow-md hover:bg-slate-50 transition-colors">
+                  Go to Notebooks
                 </button>
               </div>
             </div>
