@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { friendsApi, notesApi } from '@/services/api';
-import { Friend, Friendship, Note } from '@/types';
+import { friendsApi, notesApi, filesApi } from '@/services/api';
+import { Friend, Friendship, Note, FileItem } from '@/types';
 import toast from 'react-hot-toast';
-import { UserPlus, Users, Search, Check, X, Trash2, Mail, MoreHorizontal, Share, MessageSquareText } from 'lucide-react';
+import { UserPlus, Users, Search, Check, X, Trash2, Mail, MoreHorizontal, Share, MessageSquareText, FileText } from 'lucide-react';
 
 export default function FriendsPage() {
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -16,11 +16,14 @@ export default function FriendsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'friends' | 'requests' | 'add'>('friends');
 
-  // Share note modal state
+  // Share note/file modal state
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [notesList, setNotesList] = useState<Note[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
+  const [filesList, setFilesList] = useState<FileItem[]>([]);
+  const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
+  const [modalTab, setModalTab] = useState<'note' | 'file'>('note');
   const [sharing, setSharing] = useState(false);
 
   const fetchData = async () => {
@@ -74,25 +77,75 @@ export default function FriendsPage() {
   const handleOpenShare = async (friend: Friend) => {
     setSelectedFriend(friend);
     setShareModalOpen(true);
+    setModalTab('note');
+    setSelectedNoteId(null);
+    setSelectedFileId(null);
     try {
-      const res = await notesApi.list();
-      const data = Array.isArray(res.data?.data) ? res.data.data : res.data?.data?.data || [];
-      setNotesList(data);
+      const [notesRes, filesRes] = await Promise.all([
+        notesApi.list(),
+        filesApi.list()
+      ]);
+      const notesData = Array.isArray(notesRes.data?.data) ? notesRes.data.data : notesRes.data?.data?.data || [];
+      const filesData = filesRes.data?.data?.data || filesRes.data?.data || [];
+      setNotesList(notesData);
+      setFilesList(filesData);
     } catch {
-      toast.error('Failed to load notes');
+      toast.error('Failed to load sharing assets');
     }
   };
 
   const handleShareSubmit = async () => {
-    if (!selectedNoteId || !selectedFriend) return;
+    if (!selectedFriend) return;
+    
     setSharing(true);
     try {
-      await notesApi.share(selectedNoteId, { user_id: selectedFriend.id, permission: 'view' });
-      toast.success('Shared successfully!');
+      if (modalTab === 'note') {
+        if (!selectedNoteId) return;
+        await notesApi.share(selectedNoteId, { user_id: selectedFriend.id, permission: 'view' });
+        toast.success('Note shared successfully!');
+      } else {
+        if (!selectedFileId) return;
+        const file = filesList.find((f) => f.id === selectedFileId);
+        if (!file) return;
+        
+        // Create an elegant, premium HTML note wrapper for the file download link
+        const noteHtml = `
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; max-width: 400px; margin: 12px 0; font-family: sans-serif;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 32px; background: #e0e7ff; padding: 8px; border-radius: 12px; display: inline-block;">📁</span>
+              <div>
+                <h4 style="margin: 0; font-size: 15px; font-weight: bold; color: #1e293b; word-break: break-all;">${file.original_name}</h4>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b; font-weight: 500;">Size: ${(file.size / 1024).toFixed(1)} KB</p>
+              </div>
+            </div>
+            <div style="margin-top: 16px; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+              <a href="https://app.notexa.cloud/api/files/${file.id}/download" target="_blank" style="display: block; text-align: center; background-color: #4f46e5; color: #ffffff; padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: bold; text-decoration: none; transition: background 0.2s;">
+                Download File
+              </a>
+            </div>
+          </div>
+        `;
+        
+        // Create the note first
+        const noteRes = await notesApi.create({
+          title: `Shared File: ${file.original_name}`,
+          content: noteHtml,
+          color: '#f8fafc'
+        });
+        
+        const newNoteId = noteRes.data?.data?.id || noteRes.data?.id;
+        if (!newNoteId) throw new Error("Could not create wrapper note");
+        
+        // Share the created note with the friend
+        await notesApi.share(newNoteId, { user_id: selectedFriend.id, permission: 'view' });
+        toast.success('File shared successfully!');
+      }
+      
       setShareModalOpen(false);
       setSelectedNoteId(null);
+      setSelectedFileId(null);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to share note');
+      toast.error(err.response?.data?.message || `Failed to share ${modalTab}`);
     } finally {
       setSharing(false);
     }
@@ -291,31 +344,100 @@ export default function FriendsPage() {
         </>
       )}
 
-      {/* Share Note Modal */}
+      {/* Share Note/File Modal */}
       {shareModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
-            <h3 className="text-xl font-bold mb-4">Share with {selectedFriend?.name}</h3>
-            <div className="max-h-64 overflow-y-auto space-y-2 mb-4 p-1">
-              {notesList.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-6">No notes available to share.</p>
-              ) : (
-                notesList.map((note) => (
-                  <div
-                    key={note.id}
-                    onClick={() => setSelectedNoteId(note.id)}
-                    className={`p-3 rounded-xl border cursor-pointer transition ${selectedNoteId === note.id ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' : 'border-gray-200 hover:border-brand-300'}`}
-                  >
-                    <p className="font-semibold text-gray-800">{note.title || 'Untitled Note'}</p>
-                    {note.files && note.files.length > 0 && <p className="text-xs text-gray-500">{note.files.length} attached file(s)</p>}
-                  </div>
-                ))
-              )}
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white border border-gray-100 rounded-3xl shadow-2xl w-full max-w-md p-6 flex flex-col justify-between overflow-hidden">
+            <div>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
+                <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                  <Share size={20} className="text-indigo-600" /> Share with {selectedFriend?.name}
+                </h3>
+                <button onClick={() => setShareModalOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Modal Sub-tabs */}
+              <div className="flex bg-slate-100 rounded-xl p-1 mb-4">
+                <button
+                  onClick={() => setModalTab('note')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${modalTab === 'note' ? 'bg-white shadow text-indigo-700' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  Share Note
+                </button>
+                <button
+                  onClick={() => setModalTab('file')}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all ${modalTab === 'file' ? 'bg-white shadow text-indigo-700' : 'text-slate-500 hover:text-slate-800'}`}
+                >
+                  Share File
+                </button>
+              </div>
+
+              {/* Items List */}
+              <div className="max-h-64 overflow-y-auto space-y-2 mb-4 p-1 custom-scrollbar">
+                {modalTab === 'note' ? (
+                  notesList.length === 0 ? (
+                    <p className="text-slate-400 text-xs text-center py-8 font-semibold">No notes available to share.</p>
+                  ) : (
+                    notesList.map((note) => (
+                      <div
+                        key={note.id}
+                        onClick={() => setSelectedNoteId(note.id)}
+                        className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between ${selectedNoteId === note.id ? 'border-indigo-500 bg-indigo-50/40 text-indigo-900 shadow-sm' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50/50'}`}
+                      >
+                        <div>
+                          <p className="font-bold text-xs text-slate-800">{note.title || 'Untitled Notebook'}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{new Date(note.created_at).toLocaleDateString()}</p>
+                        </div>
+                        {note.files && note.files.length > 0 && (
+                          <span className="bg-indigo-100 text-indigo-700 text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                            {note.files.length} attachment(s)
+                          </span>
+                        )}
+                      </div>
+                    ))
+                  )
+                ) : (
+                  filesList.length === 0 ? (
+                    <p className="text-slate-400 text-xs text-center py-8 font-semibold">No files uploaded yet.</p>
+                  ) : (
+                    filesList.map((file) => (
+                      <div
+                        key={file.id}
+                        onClick={() => setSelectedFileId(file.id)}
+                        className={`p-3 rounded-2xl border-2 cursor-pointer transition-all flex items-center gap-3 ${selectedFileId === file.id ? 'border-indigo-500 bg-indigo-50/40 text-indigo-900 shadow-sm' : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50/50'}`}
+                      >
+                        <div className="p-2 bg-slate-100 text-slate-500 rounded-lg shrink-0">
+                          <FileText size={16} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-xs text-slate-800 truncate">{file.original_name}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                            {(file.size / 1024).toFixed(1)} KB &middot; {new Date(file.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )
+                )}
+              </div>
             </div>
-            <div className="flex gap-3 justify-end mt-6">
-              <button onClick={() => { setShareModalOpen(false); setSelectedNoteId(null); }} className="px-5 py-2.5 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition font-medium">Cancel</button>
-              <button onClick={handleShareSubmit} disabled={!selectedNoteId || sharing} className="px-5 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 disabled:opacity-50 transition font-medium">
-                {sharing ? 'Sharing...' : 'Share Note'}
+
+            {/* Footer Buttons */}
+            <div className="flex gap-3 justify-end mt-4 border-t border-slate-100 pt-4 shrink-0">
+              <button
+                onClick={() => { setShareModalOpen(false); setSelectedNoteId(null); setSelectedFileId(null); }}
+                className="px-4 py-2.5 text-xs font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShareSubmit}
+                disabled={sharing || (modalTab === 'note' ? !selectedNoteId : !selectedFileId)}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 rounded-xl text-xs font-bold shadow-md shadow-indigo-600/10 transition"
+              >
+                {sharing ? 'Sharing...' : (modalTab === 'note' ? 'Share Note' : 'Share File')}
               </button>
             </div>
           </div>

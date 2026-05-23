@@ -29,9 +29,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setAuth: (user, token) => {
     localStorage.setItem('notexa_token', token);
     localStorage.setItem('notexa_user', JSON.stringify(user));
-    // Auto-generate unique username on first auth if not already set
-    if (!localStorage.getItem('notexa_username_' + user.id)) {
-      const base = user.name
+    
+    // Prioritize registered username
+    if (user.username) {
+      localStorage.setItem('notexa_username_' + user.id, user.username);
+    } else if (!localStorage.getItem('notexa_username_' + user.id)) {
+      const base = (user.name || 'user')
         .toLowerCase()
         .replace(/[^a-z0-9\s]/g, '')
         .trim()
@@ -54,7 +57,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   fetchMe: async () => {
     try {
       const res = await authApi.me();
-      const { user, stats } = res.data;
+      const user = res.data?.data?.user || res.data?.user;
+      const stats = res.data?.data?.stats || res.data?.stats;
+      if (!user) throw new Error('No user data received');
       set({ user, stats, isAuthenticated: true, isLoading: false });
       localStorage.setItem('notexa_user', JSON.stringify(user));
     } catch {

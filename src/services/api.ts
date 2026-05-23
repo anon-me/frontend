@@ -1,223 +1,128 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:8000/api';
+const DEFAULT_API_URL = 'https://app.notexa.cloud/api';
 
-// Create axios instance
+const normalizeApiUrl = (value?: string) => {
+  const base = (value || DEFAULT_API_URL).trim().replace(/\/+$/, '');
+  return base.endsWith('/api') ? base : `${base}/api`;
+};
+
+const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
+
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-  withCredentials: true,
+  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+  withCredentials: false,
+  timeout: 30000,
 });
 
-// Request interceptor: attach token
-api.interceptors.request.use((config) => {
+// Attach token to every request
+api.interceptors.request.use((c) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('notexa_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    const t = localStorage.getItem('notexa_token');
+    if (t) c.headers.Authorization = `Bearer ${t}`;
   }
-  return config;
+  return c;
 });
 
-// Response interceptor: handle 401
+// Handle 401 - redirect to login (but NOT during login/register requests)
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('notexa_token');
-      localStorage.removeItem('notexa_user');
-      window.location.href = '/auth/login';
+  (r) => r,
+  (e) => {
+    if (e.response?.status === 401 && typeof window !== 'undefined') {
+      const url = e.config?.url || '';
+      // Don't redirect if we're already on login/register page
+      if (!url.includes('/login') && !url.includes('/register')) {
+        localStorage.removeItem('notexa_token');
+        localStorage.removeItem('notexa_user');
+        window.location.href = '/auth/login';
+      }
     }
-    return Promise.reject(error);
+    return Promise.reject(e);
   }
 );
 
-// ═══════════════════════════════════════════
-//  AUTH API
-// ═══════════════════════════════════════════
-
 export const authApi = {
-  register: (data: { name: string; email: string; password: string; password_confirmation: string }) =>
-    api.post('/register', data),
-
-  login: (data: { email: string; password: string }) =>
-    api.post('/login', data),
-
+  register: (d: any) => api.post('/register', d),
+  login: (d: { login: string; password: string }) => api.post('/login', d),
   logout: () => api.post('/logout'),
-
   me: () => api.get('/me'),
-
-  updateProfile: (data: { name?: string; avatar?: string }) =>
-    api.put('/profile', data),
-
-  changePassword: (data: { current_password: string; password: string; password_confirmation: string }) =>
-    api.put('/change-password', data),
-
-  resendVerification: () => api.post('/email/resend'),
+  updateProfile: (d: any) => api.put('/profile', d),
+  changePassword: (d: any) => api.put('/change-password', d),
 };
-
-// ═══════════════════════════════════════════
-//  NOTES API
-// ═══════════════════════════════════════════
 
 export const notesApi = {
-  list: (params?: { search?: string; color?: string; page?: number; per_page?: number }) =>
-    api.get('/notes', { params }),
-
-  create: (data: { title: string; content?: string; color?: string }) =>
-    api.post('/notes', data),
-
+  list: (p?: any) => api.get('/notes', { params: p }),
+  create: (d: any) => api.post('/notes', d),
   get: (id: number) => api.get(`/notes/${id}`),
-
-  update: (id: number, data: { title?: string; content?: string; color?: string }) =>
-    api.put(`/notes/${id}`, data),
-
+  update: (id: number, d: any) => api.put(`/notes/${id}`, d),
   delete: (id: number) => api.delete(`/notes/${id}`),
-
   restore: (id: number) => api.post(`/notes/${id}/restore`),
-
   permanentDelete: (id: number) => api.delete(`/notes/${id}/permanent`),
-
   togglePin: (id: number) => api.patch(`/notes/${id}/pin`),
-
   toggleArchive: (id: number) => api.patch(`/notes/${id}/archive`),
-
   archived: () => api.get('/notes/archived'),
-
   trashed: () => api.get('/notes/trashed'),
-
   versions: (id: number) => api.get(`/notes/${id}/versions`),
-
-  // Sharing
-  share: (noteId: number, data: { user_id: number; permission: 'view' | 'edit' }) =>
-    api.post(`/notes/${noteId}/share`, data),
-
-  updatePermission: (noteId: number, userId: number, data: { permission: 'view' | 'edit' }) =>
-    api.put(`/notes/${noteId}/share/${userId}`, data),
-
-  unshare: (noteId: number, userId: number) =>
-    api.delete(`/notes/${noteId}/share/${userId}`),
-
+  getShareCode: (id: number) => api.get(`/notes/${id}/share-code`),
+  regenerateCode: (id: number) => api.post(`/notes/${id}/regenerate-code`),
+  redeemCode: (code: string) => api.post('/notes/redeem-code', { code }),
+  aiSummary: (id: number) => api.post(`/notes/${id}/ai-summary`),
+  share: (noteId: number, d: any) => api.post(`/notes/${noteId}/share`, d),
+  updatePermission: (noteId: number, userId: number, d: any) => api.put(`/notes/${noteId}/share/${userId}`, d),
+  unshare: (noteId: number, userId: number) => api.delete(`/notes/${noteId}/share/${userId}`),
   collaborators: (noteId: number) => api.get(`/notes/${noteId}/collaborators`),
-
-  sharedWithMe: (params?: { page?: number }) =>
-    api.get('/shared-with-me', { params }),
+  sharedWithMe: (p?: any) => api.get('/shared-with-me', { params: p }),
 };
-
-// ═══════════════════════════════════════════
-//  FRIENDS API
-// ═══════════════════════════════════════════
 
 export const friendsApi = {
   list: () => api.get('/friends'),
-
   pendingRequests: () => api.get('/friends/requests'),
-
-  sendRequest: (email: string) => api.post('/friends/request', { email }),
-
-  acceptRequest: (friendshipId: number) => api.put(`/friends/accept/${friendshipId}`),
-
-  rejectRequest: (friendshipId: number) => api.put(`/friends/reject/${friendshipId}`),
-
+  sendRequest: (username: string) => api.post('/friends/request', { username }),
+  acceptRequest: (id: number) => api.put(`/friends/accept/${id}`),
+  rejectRequest: (id: number) => api.put(`/friends/reject/${id}`),
   removeFriend: (userId: number) => api.delete(`/friends/${userId}`),
-
   searchUsers: (query: string) => api.get('/friends/search', { params: { query } }),
 };
 
-// ═══════════════════════════════════════════
-//  FILES API
-// ═══════════════════════════════════════════
-
 export const filesApi = {
-  list: (params?: { page?: number }) => api.get('/files', { params }),
-
+  list: (p?: any) => api.get('/files', { params: p }),
   upload: (file: File, noteId?: number) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    if (noteId) formData.append('note_id', String(noteId));
-    return api.post('/files/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const fd = new FormData(); fd.append('file', file);
+    if (noteId) fd.append('note_id', String(noteId));
+    return api.post('/files/upload', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
-
-  download: (fileId: number) => api.get(`/files/${fileId}/download`),
-
-  delete: (fileId: number) => api.delete(`/files/${fileId}`),
+  download: (id: number) => api.get(`/files/${id}/download`),
+  delete: (id: number) => api.delete(`/files/${id}`),
 };
-
-// ═══════════════════════════════════════════
-//  SUBSCRIPTION API
-// ═══════════════════════════════════════════
 
 export const subscriptionApi = {
   plans: () => api.get('/subscription/plans'),
-
   mySubscription: () => api.get('/subscription/my'),
-
   subscribe: (planId: number) => api.post('/subscription/subscribe', { plan_id: planId }),
-
   paymentHistory: () => api.get('/subscription/payment-history'),
-
-  checkStatus: (paymentId: number) => api.post(`/subscription/check-status/${paymentId}`),
 };
-
-// ═══════════════════════════════════════════
-//  ADMIN API
-// ═══════════════════════════════════════════
 
 export const adminApi = {
   dashboard: () => api.get('/admin/dashboard'),
-
-  analytics: (days?: number) => api.get('/admin/analytics', { params: { days } }),
-
-  // Users
-  users: (params?: { search?: string; premium?: string; role?: string; page?: number }) =>
-    api.get('/admin/users', { params }),
-
+  users: (p?: any) => api.get('/admin/users', { params: p }),
   userDetail: (id: number) => api.get(`/admin/users/${id}`),
-
-  updateUser: (id: number, data: any) => api.put(`/admin/users/${id}`, data),
-
+  updateUser: (id: number, d: any) => api.put(`/admin/users/${id}`, d),
   deleteUser: (id: number) => api.delete(`/admin/users/${id}`),
-
-  // Notes
-  notes: (params?: { search?: string; user_id?: number; page?: number }) =>
-    api.get('/admin/notes', { params }),
-
+  notes: (p?: any) => api.get('/admin/notes', { params: p }),
   deleteNote: (id: number) => api.delete(`/admin/notes/${id}`),
-
-  // Payments
-  payments: (params?: { status?: string; page?: number }) =>
-    api.get('/admin/payments', { params }),
-
-  // Plans
+  payments: (p?: any) => api.get('/admin/payments', { params: p }),
   plans: () => api.get('/admin/plans'),
-  createPlan: (data: any) => api.post('/admin/plans', data),
-  updatePlan: (id: number, data: any) => api.put(`/admin/plans/${id}`, data),
+  createPlan: (d: any) => api.post('/admin/plans', d),
+  updatePlan: (id: number, d: any) => api.put(`/admin/plans/${id}`, d),
   deletePlan: (id: number) => api.delete(`/admin/plans/${id}`),
-
-  // Settings
-  getSettings: (group?: string) => api.get('/admin/settings', { params: { group } }),
-  updateSettings: (settings: Array<{ key: string; value: string; type?: string; group?: string }>) =>
-    api.put('/admin/settings', { settings }),
+  getSettings: (g?: string) => api.get('/admin/settings', { params: { group: g } }),
+  updateSettings: (s: any[]) => api.put('/admin/settings', { settings: s }),
   testSmtp: (email: string) => api.post('/admin/settings/smtp/test', { email }),
-
-  // Data views
-  sharedNotes: (params?: { page?: number }) => api.get('/admin/shared-notes', { params }),
-  friendships: (params?: { status?: string; page?: number }) => api.get('/admin/friendships', { params }),
-  activityLogs: (params?: { page?: number }) => api.get('/admin/activity-logs', { params }),
+  sharedNotes: (p?: any) => api.get('/admin/shared-notes', { params: p }),
+  friendships: (p?: any) => api.get('/admin/friendships', { params: p }),
+  activityLogs: (p?: any) => api.get('/admin/activity-logs', { params: p }),
 };
 
-// ═══════════════════════════════════════════
-//  PUBLIC API
-// ═══════════════════════════════════════════
-
-export const publicApi = {
-  settings: () => api.get('/settings/public'),
-};
-
+export const publicApi = { settings: () => api.get('/settings/public') };
 export default api;

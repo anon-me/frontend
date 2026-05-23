@@ -18,6 +18,46 @@ export default function SettingsPage() {
   const [passwords, setPasswords] = useState({ current_password: '', password: '', password_confirmation: '' });
   const [changingPw, setChangingPw] = useState(false);
 
+  const [personalOpenAI, setPersonalOpenAI] = useState('');
+  const [personalGemini, setPersonalGemini] = useState('');
+  const [personalOpenAIBase, setPersonalOpenAIBase] = useState('');
+  const [personalOpenAIModel, setPersonalOpenAIModel] = useState('');
+  const [personalGeminiBase, setPersonalGeminiBase] = useState('');
+  const [personalGeminiModel, setPersonalGeminiModel] = useState('');
+  const [personalDeepSeek, setPersonalDeepSeek] = useState('');
+  const [personalDeepSeekBase, setPersonalDeepSeekBase] = useState('');
+  const [personalDeepSeekModel, setPersonalDeepSeekModel] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setPersonalOpenAI(localStorage.getItem('notexa_personal_openai_key') || '');
+      setPersonalGemini(localStorage.getItem('notexa_personal_gemini_key') || '');
+      setPersonalOpenAIBase(localStorage.getItem('notexa_personal_openai_base') || '');
+      setPersonalOpenAIModel(localStorage.getItem('notexa_personal_openai_model') || '');
+      setPersonalGeminiBase(localStorage.getItem('notexa_personal_gemini_base') || '');
+      setPersonalGeminiModel(localStorage.getItem('notexa_personal_gemini_model') || '');
+      setPersonalDeepSeek(localStorage.getItem('notexa_personal_deepseek_key') || '');
+      setPersonalDeepSeekBase(localStorage.getItem('notexa_personal_deepseek_base') || '');
+      setPersonalDeepSeekModel(localStorage.getItem('notexa_personal_deepseek_model') || '');
+    }
+  }, []);
+
+  const handleSavePersonalKeys = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('notexa_personal_openai_key', personalOpenAI.trim());
+      localStorage.setItem('notexa_personal_gemini_key', personalGemini.trim());
+      localStorage.setItem('notexa_personal_openai_base', personalOpenAIBase.trim());
+      localStorage.setItem('notexa_personal_openai_model', personalOpenAIModel.trim());
+      localStorage.setItem('notexa_personal_gemini_base', personalGeminiBase.trim());
+      localStorage.setItem('notexa_personal_gemini_model', personalGeminiModel.trim());
+      localStorage.setItem('notexa_personal_deepseek_key', personalDeepSeek.trim());
+      localStorage.setItem('notexa_personal_deepseek_base', personalDeepSeekBase.trim());
+      localStorage.setItem('notexa_personal_deepseek_model', personalDeepSeekModel.trim());
+      toast.success('Personal AI keys and models updated successfully!');
+    }
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Dynamic Stats State
@@ -68,20 +108,25 @@ export default function SettingsPage() {
       }
 
       // Load or generate username
-      if (user?.id) {
-        let stored = localStorage.getItem('notexa_username_' + user.id);
-        if (!stored) {
-          const base = user.name
-            .toLowerCase()
-            .replace(/[^a-z0-9\s]/g, '')
-            .trim()
-            .split(/\s+/)
-            .join('_');
-          const suffix = String(user.id).slice(-4).padStart(4, '0');
-          stored = `${base}_${suffix}`;
-          localStorage.setItem('notexa_username_' + user.id, stored);
+      if (user) {
+        if (user.username) {
+          setUsername(user.username);
+          localStorage.setItem('notexa_username_' + user.id, user.username);
+        } else {
+          let stored = localStorage.getItem('notexa_username_' + user.id);
+          if (!stored) {
+            const base = user.name
+              .toLowerCase()
+              .replace(/[^a-z0-9\s]/g, '')
+              .trim()
+              .split(/\s+/)
+              .join('_');
+            const suffix = String(user.id).slice(-4).padStart(4, '0');
+            stored = `${base}_${suffix}`;
+            localStorage.setItem('notexa_username_' + user.id, stored);
+          }
+          setUsername(stored);
         }
-        setUsername(stored);
       }
     }
   }, [user]);
@@ -154,7 +199,8 @@ export default function SettingsPage() {
     setSaving(true);
     try {
       const res = await authApi.updateProfile({ name, institution } as any);
-      setUser(res.data.user);
+      const updatedUser = res.data?.data?.user || res.data?.user || res.data?.data;
+      setUser(updatedUser);
       if (typeof window !== 'undefined') {
         localStorage.setItem('user_institution', institution);
       }
@@ -241,6 +287,35 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Aesthetic Stats Counter Widget */}
+        <div className="hidden lg:flex items-center gap-4 bg-slate-50 border border-slate-100/60 rounded-2xl p-4 shadow-sm relative overflow-hidden group hover:shadow transition-all duration-300 shrink-0">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl translate-x-1/3 -translate-y-1/3"></div>
+          
+          <div className="flex items-center gap-3 border-r border-slate-200/80 pr-4 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-primary flex items-center justify-center shrink-0">
+              <FileText size={18} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Created</p>
+              <h4 className="text-lg font-headline font-black text-slate-800 leading-none mt-1">
+                {stats.notesCreated === null ? <div className="h-5 w-8 bg-slate-200 animate-pulse rounded"></div> : stats.notesCreated}
+              </h4>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <Share size={18} />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Shared</p>
+              <h4 className="text-lg font-headline font-black text-slate-800 leading-none mt-1">
+                {stats.notesShared === null ? <div className="h-5 w-8 bg-slate-200 animate-pulse rounded"></div> : stats.notesShared}
+              </h4>
+            </div>
+          </div>
+        </div>
+
         {/* Actions */}
         <div className="flex flex-col items-center gap-3 shrink-0 w-full sm:w-auto mt-4 sm:mt-0">
           <button className="w-full px-5 py-2.5 rounded-xl border-2 border-outline-variant/30 font-bold text-sm text-on-surface hover:bg-surface-container-low transition-colors flex items-center justify-center gap-2">
@@ -316,7 +391,7 @@ export default function SettingsPage() {
                     <GraduationCap size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-outline" />
                     <input
                       type="text"
-                      defaultValue="0000-0002-1825-0097"
+                      defaultValue="BE97CT32"
                       className="w-full pl-10 pr-4 py-3 bg-surface-container-low border-none rounded-xl font-semibold text-sm text-on-surface-variant focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                     />
                   </div>
@@ -326,7 +401,7 @@ export default function SettingsPage() {
               {(name !== user?.name || institution !== ((user as any)?.institution || 'NotExA Academy')) && (
                 <div className="mt-6 flex justify-end animate-in fade-in slide-in-from-bottom-2">
                   <button type="submit" disabled={saving} className="px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-sm shadow-md shadow-primary/20 flex items-center gap-2 hover:bg-[#291eb0] transition-all">
-                    <Save size={16} /> {saving ? 'Saving...' : 'Save Name'}
+                    <Save size={16} /> {saving ? 'Saving...' : 'Save'}
                   </button>
                 </div>
               )}
@@ -373,41 +448,132 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Stats Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Personal AI Workspace Card */}
+          <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 bg-indigo-50 text-primary rounded-xl"><Sparkles size={20} /></div>
+              <div>
+                <h2 className="text-xl font-headline font-bold text-on-surface">Personal AI Workspace</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">Use your personal API keys to power note summarizers, quizzes, and AI tools.</p>
+              </div>
+            </div>
 
-            {/* Connected to /dashboard/notes */}
-            <Link href="/dashboard/notes" className="block w-full">
-              <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm flex items-center gap-5 hover:border-primary/50 hover:shadow-md transition-all group cursor-pointer h-full">
-                <div className="w-16 h-16 rounded-[1rem] bg-primary-fixed/50 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
-                  <FileText size={28} />
+            <form onSubmit={handleSavePersonalKeys} className="space-y-6">
+              <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <h3 className="text-sm font-bold text-slate-800">OpenAI (or OpenAI-Compatible Custom Endpoint)</h3>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">Personal OpenAI Key</label>
+                  <input
+                    type="password"
+                    value={personalOpenAI}
+                    onChange={(e) => setPersonalOpenAI(e.target.value)}
+                    placeholder="sk-proj-..."
+                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all font-mono"
+                  />
                 </div>
-                <div>
-                  <h4 className="text-3xl font-headline font-black text-on-surface mb-0.5">
-                    {stats.notesCreated === null ? <div className="h-8 w-16 bg-surface-container-high animate-pulse rounded my-1"></div> : stats.notesCreated}
-                  </h4>
-                  <p className="text-sm text-on-surface-variant font-semibold">Notes Created</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">API Base URL</label>
+                    <input
+                      type="text"
+                      value={personalOpenAIBase}
+                      onChange={(e) => setPersonalOpenAIBase(e.target.value)}
+                      placeholder="https://api.openai.com/v1"
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">Model Name</label>
+                    <input
+                      type="text"
+                      value={personalOpenAIModel}
+                      onChange={(e) => setPersonalOpenAIModel(e.target.value)}
+                      placeholder="gpt-4o-mini"
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all"
+                    />
+                  </div>
                 </div>
               </div>
-            </Link>
 
-            {/* Connected to /dashboard/shared */}
-            <Link href="/dashboard/shared" className="block w-full">
-              <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm flex items-center gap-5 hover:border-secondary/50 hover:shadow-md transition-all group cursor-pointer h-full">
-                <div className="w-16 h-16 rounded-[1rem] bg-secondary-container text-secondary flex items-center justify-center shrink-0 group-hover:bg-secondary group-hover:text-white transition-colors">
-                  <Share size={28} />
+              <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <h3 className="text-sm font-bold text-slate-800">Google Gemini</h3>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">Personal Gemini Key</label>
+                  <input
+                    type="password"
+                    value={personalGemini}
+                    onChange={(e) => setPersonalGemini(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all font-mono"
+                  />
                 </div>
-                <div>
-                  <h4 className="text-3xl font-headline font-black text-on-surface mb-0.5">
-                    {stats.notesShared === null ? <div className="h-8 w-16 bg-surface-container-high animate-pulse rounded my-1"></div> : stats.notesShared}
-                  </h4>
-                  <p className="text-sm text-on-surface-variant font-semibold">Notes Shared</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">API Base URL</label>
+                    <input
+                      type="text"
+                      value={personalGeminiBase}
+                      onChange={(e) => setPersonalGeminiBase(e.target.value)}
+                      placeholder="https://generativelanguage.googleapis.com/v1beta"
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">Model Name</label>
+                    <input
+                      type="text"
+                      value={personalGeminiModel}
+                      onChange={(e) => setPersonalGeminiModel(e.target.value)}
+                      placeholder="gemini-1.5-flash"
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all"
+                    />
+                  </div>
                 </div>
               </div>
-            </Link>
 
+              <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100 space-y-4">
+                <h3 className="text-sm font-bold text-slate-800">DeepSeek</h3>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">Personal DeepSeek Key</label>
+                  <input
+                    type="password"
+                    value={personalDeepSeek}
+                    onChange={(e) => setPersonalDeepSeek(e.target.value)}
+                    placeholder="sk-..."
+                    className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all font-mono"
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">API Base URL</label>
+                    <input
+                      type="text"
+                      value={personalDeepSeekBase}
+                      onChange={(e) => setPersonalDeepSeekBase(e.target.value)}
+                      placeholder="https://api.deepseek.com"
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-outline uppercase tracking-widest pl-1">Model Name</label>
+                    <input
+                      type="text"
+                      value={personalDeepSeekModel}
+                      onChange={(e) => setPersonalDeepSeekModel(e.target.value)}
+                      placeholder="deepseek-chat"
+                      className="w-full px-4 py-3 bg-white border border-gray-100 rounded-xl font-semibold text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:border-primary/50 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button type="submit" className="px-5 py-2.5 bg-primary hover:bg-[#291eb0] text-white rounded-xl font-bold text-sm shadow-md shadow-primary/20 flex items-center gap-2 transition-all">
+                  <Save size={16} /> Save AI Keys
+                </button>
+              </div>
+            </form>
           </div>
-
         </div>
 
         {/* Right Column (Span 1) */}

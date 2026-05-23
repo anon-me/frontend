@@ -4,14 +4,14 @@ import { useState, useEffect } from 'react';
 import { adminApi } from '@/services/api';
 import { SiteSetting } from '@/types';
 import toast from 'react-hot-toast';
-import { Save, Mail, Globe, Shield, CreditCard, Send } from 'lucide-react';
+import { Save, Mail, Globe, Shield, CreditCard, Send, Sparkles } from 'lucide-react';
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SiteSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testEmail, setTestEmail] = useState('');
-  const [tab, setTab] = useState<'general' | 'smtp' | 'email' | 'legal' | 'payment'>('general');
+  const [tab, setTab] = useState<'general' | 'smtp' | 'email' | 'legal' | 'payment' | 'ai'>('general');
 
   useEffect(() => {
     const fetch = async () => {
@@ -22,8 +22,15 @@ export default function AdminSettingsPage() {
   }, []);
 
   const getValue = (key: string) => settings.find((s) => s.key === key)?.value || '';
-  const setValue = (key: string, value: string) => {
-    setSettings((prev) => prev.map((s) => s.key === key ? { ...s, value } : s));
+  const setValue = (key: string, value: string, group: string = 'general') => {
+    setSettings((prev) => {
+      const exists = prev.some((s) => s.key === key);
+      if (exists) {
+        return prev.map((s) => s.key === key ? { ...s, value } : s);
+      } else {
+        return [...prev, { id: 0, key, value, type: 'text', group }];
+      }
+    });
   };
 
   const handleSave = async (group: string) => {
@@ -52,6 +59,7 @@ export default function AdminSettingsPage() {
     { key: 'email' as const, label: 'Email', icon: Mail },
     { key: 'legal' as const, label: 'Legal Pages', icon: Shield },
     { key: 'payment' as const, label: 'Payment', icon: CreditCard },
+    { key: 'ai' as const, label: 'AI Settings', icon: Sparkles },
   ];
 
   return (
@@ -204,6 +212,116 @@ export default function AdminSettingsPage() {
             <button onClick={() => handleSave('payment')} disabled={saving}
               className="flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl text-sm font-medium hover:bg-brand-700 disabled:opacity-50">
               <Save size={16} /> Save Payment Settings
+            </button>
+          </div>
+        )}
+
+        {tab === 'ai' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div>
+              <h3 className="text-base font-bold text-gray-900 mb-1">Global Smart AI Workspace</h3>
+              <p className="text-xs text-gray-500">Configure keys to power AI tools like summarizers, card builders, quizzes and more across the platform.</p>
+            </div>
+
+            <div className="flex items-center justify-between bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-sm">
+              <div>
+                <p className="font-medium text-gray-900">Enable Smart AI Assistant</p>
+                <p className="text-sm text-gray-500">Allow users to access AI features on their notes dashboard</p>
+              </div>
+              <button onClick={() => {
+                const current = getValue('ai_enabled');
+                setValue('ai_enabled', current === 'true' ? 'false' : 'true', 'ai');
+              }}
+                className={`w-12 h-6 rounded-full transition relative ${getValue('ai_enabled') === 'true' ? 'bg-brand-600' : 'bg-gray-300'}`}>
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition ${getValue('ai_enabled') === 'true' ? 'left-6' : 'left-0.5'}`} />
+              </button>
+            </div>
+
+             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Default AI Provider</label>
+              <select value={getValue('ai_provider') || 'openai'} onChange={(e) => setValue('ai_provider', e.target.value, 'ai')}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 font-semibold text-sm transition bg-white cursor-pointer">
+                <option value="openai">OpenAI (GPT-4o-mini)</option>
+                <option value="gemini">Google Gemini (Gemini 1.5 Flash)</option>
+                <option value="deepseek">DeepSeek (deepseek-chat)</option>
+              </select>
+            </div>
+
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100/60 space-y-4">
+              <h4 className="text-sm font-bold text-gray-900">OpenAI Workspace (or Custom Endpoint)</h4>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">OpenAI API Key</label>
+                <input type="password" value={getValue('openai_api_key')} onChange={(e) => setValue('openai_api_key', e.target.value, 'ai')}
+                  placeholder="sk-..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 font-mono text-sm bg-white" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">API Base URL</label>
+                  <input type="text" value={getValue('openai_base_url')} onChange={(e) => setValue('openai_base_url', e.target.value, 'ai')}
+                    placeholder="https://api.openai.com/v1"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white font-medium" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Model Name</label>
+                  <input type="text" value={getValue('openai_model')} onChange={(e) => setValue('openai_model', e.target.value, 'ai')}
+                    placeholder="gpt-4o-mini"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white font-medium" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100/60 space-y-4">
+              <h4 className="text-sm font-bold text-gray-900">Google Gemini Workspace</h4>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Google Gemini API Key</label>
+                <input type="password" value={getValue('gemini_api_key')} onChange={(e) => setValue('gemini_api_key', e.target.value, 'ai')}
+                  placeholder="AIzaSy..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 font-mono text-sm bg-white" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">API Base URL</label>
+                  <input type="text" value={getValue('gemini_base_url')} onChange={(e) => setValue('gemini_base_url', e.target.value, 'ai')}
+                    placeholder="https://generativelanguage.googleapis.com/v1beta"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white font-medium" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Model Name</label>
+                  <input type="text" value={getValue('gemini_model')} onChange={(e) => setValue('gemini_model', e.target.value, 'ai')}
+                    placeholder="gemini-1.5-flash"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white font-medium" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100/60 space-y-4">
+              <h4 className="text-sm font-bold text-gray-900">DeepSeek Workspace</h4>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">DeepSeek API Key</label>
+                <input type="password" value={getValue('deepseek_api_key')} onChange={(e) => setValue('deepseek_api_key', e.target.value, 'ai')}
+                  placeholder="sk-..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 font-mono text-sm bg-white" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">API Base URL</label>
+                  <input type="text" value={getValue('deepseek_base_url')} onChange={(e) => setValue('deepseek_base_url', e.target.value, 'ai')}
+                    placeholder="https://api.deepseek.com"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white font-medium" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Model Name</label>
+                  <input type="text" value={getValue('deepseek_model')} onChange={(e) => setValue('deepseek_model', e.target.value, 'ai')}
+                    placeholder="deepseek-chat"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white font-medium" />
+                </div>
+              </div>
+            </div>
+
+            <button onClick={() => handleSave('ai')} disabled={saving}
+              className="flex items-center gap-2 px-5 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold shadow-md shadow-brand-600/10 hover:shadow-brand-600/20 hover:-translate-y-0.5 active:translate-y-0 transition duration-200 disabled:opacity-50">
+              <Save size={16} /> Save AI Settings
             </button>
           </div>
         )}

@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ login: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -19,11 +19,18 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await authApi.login(form);
-      setAuth(res.data.user, res.data.token);
+      const user = res.data?.data?.user || res.data?.user;
+      const token = res.data?.data?.token || res.data?.token;
+
+      if (!user || !token) {
+        throw new Error('Invalid login response');
+      }
+
+      setAuth(user, token);
       toast.success('Welcome back!');
-      router.push(res.data.user.role === 'admin' ? '/admin/analytics' : '/dashboard/notes');
+      router.push(user.role === 'admin' ? '/admin/analytics' : '/dashboard/notes');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Login failed');
+      toast.error(err.response?.data?.message || err.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -103,8 +110,8 @@ export default function LoginPage() {
                   placeholder="name@email.com"
                   type="email"
                   required
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  value={form.login}
+                  onChange={(e) => setForm({ ...form, login: e.target.value })}
                 />
               </div>
             </div>
