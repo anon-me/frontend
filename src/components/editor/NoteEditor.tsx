@@ -101,36 +101,66 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     if (!geminiKey && process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
       geminiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
     }
+    if (!deepseekKey && process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY) {
+      deepseekKey = process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY;
+    }
 
     try {
       const res = await publicApi.settings();
-      const settingsList = res.data?.data || res.data || [];
-      if (Array.isArray(settingsList)) {
-        const opKeySetting = settingsList.find((s: any) => s.key === 'openai_api_key')?.value;
-        const gemKeySetting = settingsList.find((s: any) => s.key === 'gemini_api_key')?.value;
-        const dsKeySetting = settingsList.find((s: any) => s.key === 'deepseek_api_key')?.value;
-        const provSetting = settingsList.find((s: any) => s.key === 'ai_provider')?.value;
-        const enabledSetting = settingsList.find((s: any) => s.key === 'ai_enabled')?.value;
-        
-        const opBaseSetting = settingsList.find((s: any) => s.key === 'openai_base_url')?.value;
-        const opModelSetting = settingsList.find((s: any) => s.key === 'openai_model')?.value;
-        const gemBaseSetting = settingsList.find((s: any) => s.key === 'gemini_base_url')?.value;
-        const gemModelSetting = settingsList.find((s: any) => s.key === 'gemini_model')?.value;
-        const dsBaseSetting = settingsList.find((s: any) => s.key === 'deepseek_base_url')?.value;
-        const dsModelSetting = settingsList.find((s: any) => s.key === 'deepseek_model')?.value;
+      const data = res.data?.data || res.data || {};
+      
+      let opKeySetting = '';
+      let gemKeySetting = '';
+      let dsKeySetting = '';
+      let provSetting = '';
+      let enabledSetting: string | boolean | number = '';
+      
+      let opBaseSetting = '';
+      let opModelSetting = '';
+      let gemBaseSetting = '';
+      let gemModelSetting = '';
+      let dsBaseSetting = '';
+      let dsModelSetting = '';
 
-        if (enabledSetting === 'true' || enabledSetting === true) {
-          if (opKeySetting) openaiKey = opKeySetting;
-          if (gemKeySetting) geminiKey = gemKeySetting;
-          if (dsKeySetting) deepseekKey = dsKeySetting;
-          if (provSetting) provider = provSetting;
-          if (opBaseSetting) openaiBase = opBaseSetting;
-          if (opModelSetting) openaiModel = opModelSetting;
-          if (gemBaseSetting) geminiBase = gemBaseSetting;
-          if (gemModelSetting) geminiModel = gemModelSetting;
-          if (dsBaseSetting) deepseekBase = dsBaseSetting;
-          if (dsModelSetting) deepseekModel = dsModelSetting;
-        }
+      if (Array.isArray(data)) {
+        opKeySetting = data.find((s: any) => s.key === 'openai_api_key')?.value || '';
+        gemKeySetting = data.find((s: any) => s.key === 'gemini_api_key')?.value || '';
+        dsKeySetting = data.find((s: any) => s.key === 'deepseek_api_key')?.value || '';
+        provSetting = data.find((s: any) => s.key === 'ai_provider')?.value || '';
+        enabledSetting = data.find((s: any) => s.key === 'ai_enabled')?.value || '';
+        
+        opBaseSetting = data.find((s: any) => s.key === 'openai_base_url')?.value || '';
+        opModelSetting = data.find((s: any) => s.key === 'openai_model')?.value || '';
+        gemBaseSetting = data.find((s: any) => s.key === 'gemini_base_url')?.value || '';
+        gemModelSetting = data.find((s: any) => s.key === 'gemini_model')?.value || '';
+        dsBaseSetting = data.find((s: any) => s.key === 'deepseek_base_url')?.value || '';
+        dsModelSetting = data.find((s: any) => s.key === 'deepseek_model')?.value || '';
+      } else if (typeof data === 'object' && data !== null) {
+        opKeySetting = (data as any).openai_api_key || '';
+        gemKeySetting = (data as any).gemini_api_key || '';
+        dsKeySetting = (data as any).deepseek_api_key || '';
+        provSetting = (data as any).ai_provider || '';
+        enabledSetting = (data as any).ai_enabled || '';
+        
+        opBaseSetting = (data as any).openai_base_url || '';
+        opModelSetting = (data as any).openai_model || '';
+        gemBaseSetting = (data as any).gemini_base_url || '';
+        gemModelSetting = (data as any).gemini_model || '';
+        dsBaseSetting = (data as any).deepseek_base_url || '';
+        dsModelSetting = (data as any).deepseek_model || '';
+      }
+
+      if (enabledSetting === 'true' || enabledSetting === true || enabledSetting === '1' || enabledSetting === 1) {
+        if (opKeySetting) openaiKey = opKeySetting;
+        if (gemKeySetting) geminiKey = gemKeySetting;
+        if (dsKeySetting) deepseekKey = dsKeySetting;
+        if (provSetting) provider = provSetting;
+        if (opBaseSetting) openaiBase = opBaseSetting;
+        if (opModelSetting) openaiModel = opModelSetting;
+        if (gemBaseSetting) geminiBase = gemBaseSetting;
+        if (gemModelSetting) geminiModel = gemModelSetting;
+        if (dsBaseSetting) deepseekBase = dsBaseSetting;
+        if (dsModelSetting) deepseekModel = dsModelSetting;
       }
     } catch (e) {
       console.warn("Using personal local keys:", e);
