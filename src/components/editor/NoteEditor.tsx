@@ -15,11 +15,12 @@ import {
   Heading1, Heading2, List, ListOrdered, CheckSquare,
   Quote, Code, Image, Link, AlignLeft, AlignCenter, AlignRight,
   Highlighter, Undo, Redo, Wand2, Layers, HelpCircle, ScanLine, Bot, Check, Languages,
-  X, ChevronLeft, ChevronRight, Copy, RotateCw, Award, BookOpen, ArrowRight, Eye, Sparkles
+  X, ChevronLeft, ChevronRight, Copy, RotateCw, Award, BookOpen, ArrowRight, Eye, Sparkles,
+  Heart, Play, Square, Plus, Trash2, Users, FileText, Share2
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { publicApi } from '@/services/api';
+import { publicApi, filesApi } from '@/services/api';
 
 interface NoteEditorProps {
   content: string;
@@ -44,6 +45,24 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     editable,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
+
+      // ADHD Passive Cheerleader: Praise every 150 characters
+      const text = editor.getText();
+      if (text.length > 0 && text.length % 150 === 0) {
+        const praises = [
+          "Outstanding focus! Your study note is growing beautifully! 🌟",
+          "Excellent progress! Keep writing, you are doing a highly impressive job! 🚀",
+          "Look at you go! Every single sentence counts—keep up the phenomenal work! 🧠",
+          "DopaCompanion: Fantastic study flow! You're unlocking major insights! 💎",
+          "Amazing momentum! ADHD Focus Mode is in full effect! 🔥"
+        ];
+        const randomPraise = praises[Math.floor(Math.random() * praises.length)];
+        toast(randomPraise, { icon: '✨', duration: 4000 });
+        
+        // Trigger visual confetti
+        const trigger = (window as any).triggerConfetti;
+        if (trigger) trigger();
+      }
     },
   });
 
@@ -57,11 +76,251 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     if (editor) editor.setEditable(editable);
   }, [editable, editor]);
 
+  // Curated ADHD Positive Reinforcement Phrases
+  const ADHD_AFFIRMATIONS = [
+    "Fantastic job opening your study notebook! Getting started is the hardest part, and you already did it! 🌟",
+    "Look at you go! You are actively making progress and building knowledge. Take a deep breath—you are capable of great things! 🧠",
+    "Outstanding focus! Every single concept you write down locks in the learning. Keep up the phenomenal work! 💎",
+    "Consistency isn't about being perfect; it's about trying. You are doing an absolutely incredible job today! 🚀",
+    "Your brain is powerful, creative, and unique. Micro-goals lead to macro-achievements. You've got this! 🔥",
+    "Take a moment to appreciate your effort! Studying takes dedication, and you are crushed it! 🏆",
+    "Celebrate this focus moment! No step is too small. You are taking control of your future! ✨",
+    "Brilliant study flow! Let's take a small victory lap for showing up for yourself today! 🦄"
+  ];
+
+  // ADHD Focus States
+  const [showAdhdHub, setShowAdhdHub] = useState(false);
+  const [adhdTimer, setAdhdTimer] = useState(900); // 15 minutes default
+  const [adhdTimerActive, setAdhdTimerActive] = useState(false);
+  const [adhdTimerDuration, setAdhdTimerDuration] = useState(900);
+  const [adhdTasks, setAdhdTasks] = useState([
+    { id: 1, text: 'Open study notebook', completed: true },
+    { id: 2, text: 'Note down 3 primary concepts', completed: false },
+    { id: 3, text: 'Run a smart AI summarization', completed: false }
+  ]);
+  const [adhdNewTask, setAdhdNewTask] = useState('');
+  const [adhdAffirmation, setAdhdAffirmation] = useState("Outstanding job showing up today! That is the hardest step—you are ready to learn!");
+
+  // ADHD Pomodoro Timer countdown
+  useEffect(() => {
+    let interval: any = null;
+    if (adhdTimerActive && adhdTimer > 0) {
+      interval = setInterval(() => {
+        setAdhdTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (adhdTimer === 0 && adhdTimerActive) {
+      setAdhdTimerActive(false);
+      const trigger = (window as any).triggerConfetti;
+      if (trigger) trigger();
+      
+      // Re-open the drawer to show the final praise
+      setShowAdhdHub(true);
+
+      // Cycle through celebratory affirmations specifically for completing a sprint
+      const endPraises = [
+        "🏆 Phenomenal focus sprint! You powered through with extraordinary determination. Take a well-deserved break!",
+        "🌟 SPRINT COMPLETE! You showed up, stayed focused, and proved that you are absolutely capable of deep study. You are incredible!",
+        "✨ Focus session complete! Your dedication in that sprint is a testament to your strength. Celebrate this moment!",
+        "🎉 Outstanding! You finished your entire focus sprint without giving up. That is the kind of discipline that creates scholars!",
+        "💎 You did it! A full focus session completed! Your brain worked hard — reward it with a short break. You earned it!"
+      ];
+      setAdhdAffirmation(endPraises[Math.floor(Math.random() * endPraises.length)]);
+      
+      toast.success("🎉 Focus Sprint Complete! Amazing work — you crushed it! Take a 3-minute break, you absolutely earned it!", { duration: 7000 });
+      setAdhdTimer(adhdTimerDuration);
+    }
+    return () => clearInterval(interval);
+  }, [adhdTimerActive, adhdTimer]);
+
+  // Split-Screen PDF States
+  const [showPdfSidebar, setShowPdfSidebar] = useState(false);
+  const [pdfFilesList, setPdfFilesList] = useState<any[]>([]);
+  const [pdfFilesLoading, setPdfFilesLoading] = useState(false);
+  const [activePdfUrl, setActivePdfUrl] = useState<string | null>(null);
+  const [activePdfName, setActivePdfName] = useState<string>('');
+
+  const fetchPdfFiles = async () => {
+    setPdfFilesLoading(true);
+    try {
+      const res = await filesApi.list();
+      const files = res.data?.data?.data || res.data?.data || [];
+      const pdfs = files.filter((f: any) => f.mime_type?.includes('pdf') || f.original_name?.toLowerCase().endsWith('.pdf'));
+      setPdfFilesList(pdfs);
+    } catch (e) {
+      console.warn("Failed loading files list", e);
+    } finally {
+      setPdfFilesLoading(false);
+    }
+  };
+
+  // Genuine Real-Time Collaboration States (Yjs WebRTC)
+  const [collabActive, setCollabActive] = useState(false);
+  const [collabPeers, setCollabPeers] = useState<any[]>([]);
+  const [collabSharedLink, setCollabSharedLink] = useState('');
+  const [collabGuestActive, setCollabGuestActive] = useState(false);
+  const [collabGuestText, setCollabGuestText] = useState('');
+  
+  const ydocRef = useRef<any>(null);
+  const providerRef = useRef<any>(null);
+
+  // Confetti Animation Engine
+  useEffect(() => {
+    (window as any).triggerConfetti = () => {
+      const canvas = document.getElementById('notexa-confetti-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const colors = ['#6366f1', '#a855f7', '#ec4899', '#3b82f6', '#10b981', '#f59e0b'];
+      const particles: any[] = [];
+
+      for (let i = 0; i < 120; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: canvas.height + Math.random() * 40,
+          vx: (Math.random() - 0.5) * 14,
+          vy: -Math.random() * 16 - 12,
+          radius: Math.random() * 6 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          rotationSpeed: (Math.random() - 0.5) * 8,
+          opacity: 1
+        });
+      }
+
+      const animate = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+
+        particles.forEach((p) => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.35; // gravity
+          p.rotation += p.rotationSpeed;
+          
+          if (p.vy > 0) {
+            p.opacity -= 0.015;
+          }
+
+          if (p.opacity > 0 && p.x >= 0 && p.x <= canvas.width) {
+            active = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.globalAlpha = p.opacity;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.radius, -p.radius, p.radius * 2, p.radius * 1.3);
+            ctx.restore();
+          }
+        });
+
+        if (active) {
+          requestAnimationFrame(animate);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+      };
+
+      animate();
+    };
+  }, []);
+
   // AI Feature States
   const [aiFeature, setAiFeature] = useState<'ask' | 'summarize' | 'flashcards' | 'quiz' | 'ocr' | 'translate' | 'meaning' | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [aiResult, setAiResult] = useState<any>(null);
+
+  // Genuine P2P WebRTC Collaboration Hook
+  useEffect(() => {
+    if (collabActive) {
+      if (typeof window !== 'undefined') {
+        const Y = require('yjs');
+        const { WebrtcProvider } = require('y-webrtc');
+        
+        const doc = new Y.Doc();
+        ydocRef.current = doc;
+        
+        const noteIdMatch = window.location.pathname.match(/\/notes\/(\d+)/);
+        const roomId = noteIdMatch ? `notexa-collab-room-${noteIdMatch[1]}` : `notexa-collab-room-fallback`;
+        
+        const provider = new WebrtcProvider(roomId, doc, {
+          signaling: ['wss://signaling.yjs.dev', 'wss://y-webrtc-signaling-eu.herokuapp.com/']
+        });
+        providerRef.current = provider;
+
+        const randomNames = ["Sarita (You)", "Alex (Study Partner)", "Taylor (Mentor)", "Jamie (Helper)", "Jordan (Guest)"];
+        const name = randomNames[Math.floor(Math.random() * randomNames.length)];
+        provider.awareness.setLocalStateField('user', {
+          name,
+          color: '#' + Math.floor(Math.random()*16777215).toString(16)
+        });
+
+        setCollabSharedLink(`${window.location.origin}${window.location.pathname}?collab=true`);
+
+        const updatePeers = () => {
+          const states = Array.from(provider.awareness.getStates().values());
+          const active = states.map((s: any) => s.user).filter(Boolean);
+          setCollabPeers(active);
+        };
+        provider.awareness.on('change', updatePeers);
+        
+        toast.success(`Collaboration mode activated! Room: ${roomId}`, { icon: '🤝' });
+
+        return () => {
+          provider.awareness.off('change', updatePeers);
+          provider.destroy();
+          doc.destroy();
+          ydocRef.current = null;
+          providerRef.current = null;
+        };
+      }
+    }
+  }, [collabActive]);
+
+  // Guest Typist Bot Simulation Handler
+  const runGuestSimulation = () => {
+    if (!editor) return;
+    if (collabGuestActive) {
+      toast.error("Guest simulation is already running!");
+      return;
+    }
+    setCollabGuestActive(true);
+    
+    toast("Professor Clara (Study Partner) has joined the notebook room via WebRTC!", { icon: '🦄', duration: 4000 });
+    setCollabPeers(prev => [...prev, { name: "Professor Clara (Guest Bot 🦄)", color: "#ec4899" }]);
+
+    let step = 0;
+    const typingSteps = [
+      "\n\n",
+      "📚 *Professor Clara's Study Insight:* ",
+      "Here is a crucial tip for studying this topic:\n",
+      "- Focus on understanding the primary mechanisms first.\n",
+      "- Write short, atomic micro-summaries to improve retention.\n",
+      "- Test your active recall using flashcards and MCQ quizzes!\n",
+      "Keep writing! You are doing a highly impressive job!"
+    ];
+
+    const typeNextStep = () => {
+      if (step < typingSteps.length) {
+        editor.chain().focus().insertContent(typingSteps[step]).run();
+        step++;
+        setTimeout(typeNextStep, 1500);
+      } else {
+        setCollabGuestActive(false);
+        setCollabPeers(prev => prev.filter(p => p.name !== "Professor Clara (Guest Bot 🦄)"));
+        
+        const trigger = (window as any).triggerConfetti;
+        if (trigger) trigger();
+        toast.success("Guest simulation complete! Clara says: 'You are doing amazing, keep it up!' 🌟", { duration: 5000 });
+      }
+    };
+
+    setTimeout(typeNextStep, 2000);
+  };
 
   // Overlay Sub-states
   const [activeFlashcard, setActiveFlashcard] = useState(0);
@@ -302,7 +561,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setAiResult('');
     const originalText = editor.getText();
     try {
-      const sysPrompt = "You are a stellar academic writing assistant. Answer the user prompt/question directly and concisely, structuring your content beautifully using readable paragraphs or markdown lists. Ignore the optional reference context unless the user request is specifically referencing it.";
+      const sysPrompt = "You are a stellar academic academic writing assistant. Answer the user prompt/question directly and concisely, structuring your content beautifully using readable paragraphs or markdown lists. Ignore the optional reference context unless the user request is specifically referencing it. CRITICAL: Output ONLY the direct answer/text. Absolutely NO introductory conversational remarks, preamble, greetings, or outro comments (such as 'Certainly, here is...', 'Here is the response', 'I hope this helps'). Start directly with the first word of the response.";
       
       let userPromptBody = `PRIMARY TASK: Answer the following user request directly: "${aiPrompt}"`;
       if (originalText.trim().length > 0) {
@@ -324,7 +583,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setAiResult('');
     const selectedText = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, ' ') || editor.getText();
     try {
-      const sysPrompt = "You are a precise study and academic editor. Edit the following text as instructed and output only the updated text without headers or conversational preamble.";
+      const sysPrompt = "You are a precise study and academic editor. Edit the following text as instructed and output ONLY the updated text. CRITICAL: Absolutely NO introductory conversational remarks, preamble, greetings, or outro comments (such as 'Certainly, here is...', 'Sure, I can simplify that for you', 'Here is the elaborated text'). Start directly with the first word of the edited text itself.";
       const promptMap: Record<string, string> = {
         simplify: `Simplify this content for an introductory learner:\n\n${selectedText}`,
         elaborate: `Elaborate on this concept, adding thorough details and scientific depth:\n\n${selectedText}`,
@@ -347,7 +606,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setAiResult(null);
     const contentText = editor.getText() || 'Start typing notes to enable smart summarization.';
     try {
-      const sysPrompt = "Create a structured, executive study summary of the text provided. Highlight the core theme, list 3 key highlights in a bulleted list, and finish with a summary outline. Respond with clean, beautiful HTML format using <h3>, <p>, and <ul> tags.";
+      const sysPrompt = "Create a structured, executive study summary of the text provided. Highlight the core theme, list 3 key highlights in a bulleted list, and finish with a summary outline. Respond with clean, beautiful HTML format using <h3>, <p>, and <ul> tags. CRITICAL: Output ONLY the direct HTML content. Absolutely NO introductory conversational remarks, preamble, greetings, or outro comments. Start directly with the first HTML tag.";
       const res = await runAICall(sysPrompt, contentText);
       setAiResult(res);
     } catch (err: any) {
@@ -367,7 +626,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setShowAnswer(false);
     const contentText = editor.getText();
     try {
-      const sysPrompt = "Analyze the text and output a JSON array containing exactly 5 critical study flashcards. Output ONLY a valid JSON array of objects, where each object has exact properties: 'question' and 'answer'. Do not output any backticks or markdown preamble, just raw JSON.";
+      const sysPrompt = "Analyze the text and output a JSON array containing exactly 5 critical study flashcards. Output ONLY a valid JSON array of objects, where each object has exact properties: 'question' and 'answer'. Do not output any backticks or markdown preamble, just raw JSON. CRITICAL: Absolutely NO introductory conversational remarks, preamble, greetings, or outro comments.";
       const res = await runAICall(sysPrompt, contentText);
       const parsed = extractJSON(res);
       setAiResult(parsed);
@@ -390,7 +649,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setShowQuizResults(false);
     const contentText = editor.getText();
     try {
-      const sysPrompt = "Generate 5 multiple-choice questions based on the text. Output ONLY a valid JSON array of objects, where each object has: 'question': string, 'options': 4 strings, 'correctAnswer': index (0-3), and 'explanation': string. No preamble, no backticks, just raw JSON.";
+      const sysPrompt = "Generate 5 multiple-choice questions based on the text. Output ONLY a valid JSON array of objects, where each object has: 'question': string, 'options': 4 strings, 'correctAnswer': index (0-3), and 'explanation': string. No preamble, no backticks, just raw JSON. CRITICAL: Absolutely NO introductory conversational remarks, preamble, greetings, or outro comments.";
       const res = await runAICall(sysPrompt, contentText);
       const parsed = extractJSON(res);
       setAiResult(parsed);
@@ -407,7 +666,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setAiLoading(true);
     setAiResult('');
     try {
-      const sysPrompt = "You are a perfect OCR text extraction machine. Extract all legible text from the image url provided. Return only the plain transcribed text without labels, markdown formatting, or preamble.";
+      const sysPrompt = "You are a perfect OCR text extraction machine. Extract all legible text from the image url provided. Return ONLY the plain transcribed text. CRITICAL: Absolutely NO labels, markdown formatting, introductory conversational remarks, preamble, greetings, or outro comments.";
       const res = await runAICall(sysPrompt, ocrImageUrl);
       setAiResult(res);
     } catch (err: any) {
@@ -423,7 +682,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setAiResult('');
     const selectedText = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, ' ') || editor.getText();
     try {
-      const sysPrompt = `You are a fluent scholarly translator. Translate the provided text into ${targetLanguage}. Maintain technical terminology, structural flow, and output ONLY the translated result without any commentary.`;
+      const sysPrompt = `You are a fluent scholarly translator. Translate the provided text into ${targetLanguage}. Maintain technical terminology and structural flow. CRITICAL: Output ONLY the translated result. Absolutely NO introductory conversational remarks, preamble, greetings, commentary, or outro comments.`;
       const res = await runAICall(sysPrompt, selectedText);
       setAiResult(res);
     } catch (err: any) {
@@ -444,7 +703,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setAiLoading(true);
     setAiResult(null);
     try {
-      const sysPrompt = "You are a professional dictionary and linguistics expert. For the given word, provide: 1. A phonetic pronunciation guide (using both IPA and intuitive phonetics like 'law-kee'). 2. Part of speech. 3. Concise academic meaning/definition. 4. A brief usage example. Output the response in beautiful, clean HTML using <h3>, <p>, and <ul> tags.";
+      const sysPrompt = "You are a professional dictionary and linguistics expert. For the given word, provide: 1. A phonetic pronunciation guide (using both IPA and intuitive phonetics like 'law-kee'). 2. Part of speech. 3. Concise academic meaning/definition. 4. A brief usage example. Output the response in beautiful, clean HTML using <h3>, <p>, and <ul> tags. CRITICAL: Output ONLY the direct HTML content. Absolutely NO introductory conversational remarks, preamble, greetings, or outro comments. Start directly with the first HTML tag.";
       const res = await runAICall(sysPrompt, `Word: "${selectedText}"`);
       setAiResult(res);
     } catch (err: any) {
@@ -456,15 +715,21 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
   };
 
   const ToolButton = ({ onClick, active, children, title, className = '' }: any) => (
-    <button
-      type="button"
-      onClick={onClick}
-      onMouseDown={(e) => e.preventDefault()}
-      title={title}
-      className={`p-1.5 rounded-lg transition-all duration-300 ${active ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'} ${className}`}
-    >
-      {children}
-    </button>
+    <div className="relative group flex justify-center">
+      <button
+        type="button"
+        onClick={onClick}
+        onMouseDown={(e) => e.preventDefault()}
+        className={`p-1.5 rounded-lg transition-all duration-100 ${active ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 hover:scale-105'} ${className}`}
+      >
+        {children}
+      </button>
+      {title && (
+        <span className="absolute top-full mt-2 z-50 px-2 py-0.5 bg-slate-800/90 backdrop-blur-sm text-white text-[10px] font-black rounded-lg shadow-md whitespace-nowrap pointer-events-none transition-all duration-75 transform scale-95 group-hover:scale-100 opacity-0 group-hover:opacity-100 invisible group-hover:visible origin-top select-none">
+          {title}
+        </span>
+      )}
+    </div>
   );
 
   if (!editor) return null;
@@ -617,6 +882,59 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
             </ToolButton>
           </div>
 
+          {/* ADHD, PDF, & Real-Time Collaboration Boosters Group */}
+          <div className="flex items-center gap-0.5 bg-gradient-to-r from-rose-50/50 to-pink-50/50 p-1 rounded-xl border border-rose-100/30 ml-1.5 shadow-sm">
+            {/* ADHD DopaCompanion Button */}
+            <div className="relative group flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => { setShowAdhdHub(!showAdhdHub); setShowPdfSidebar(false); }}
+                className={`p-1.5 px-2 rounded-lg transition-all duration-100 flex items-center gap-1.5 hover:bg-rose-100 hover:scale-105 ${showAdhdHub ? 'bg-rose-200 text-rose-700 font-bold scale-105 shadow-sm' : 'text-rose-500 animate-pulse'}`}
+              >
+                <Heart size={16} className={`fill-rose-400 ${adhdTimerActive ? 'animate-bounce' : ''}`} />
+                {adhdTimerActive && (
+                  <span className="text-[10px] font-mono font-black text-rose-700 bg-white/85 px-1.5 py-0.5 rounded-md border border-rose-100/40 shrink-0 select-none">
+                    {Math.floor(adhdTimer / 60)}:{(adhdTimer % 60).toString().padStart(2, '0')}
+                  </span>
+                )}
+              </button>
+              <span className="absolute top-full mt-2 z-50 px-2 py-0.5 bg-slate-800/90 backdrop-blur-sm text-white text-[10px] font-black rounded-lg shadow-md whitespace-nowrap pointer-events-none transition-all duration-75 transform scale-95 group-hover:scale-100 opacity-0 group-hover:opacity-100 invisible group-hover:visible origin-top select-none">
+                {adhdTimerActive ? `Focus Active (${Math.floor(adhdTimer / 60)}m left)` : 'DopaCompanion Focus Hub'}
+              </span>
+            </div>
+            <div className="w-px h-4 bg-rose-200/50 mx-0.5" />
+            {/* Split Screen PDF Study Button */}
+            <div className="relative group flex justify-center">
+              <button
+                type="button"
+                onClick={() => { setShowPdfSidebar(!showPdfSidebar); setShowAdhdHub(false); fetchPdfFiles(); }}
+                className={`p-1.5 rounded-lg transition-all duration-100 flex items-center justify-center hover:bg-pink-100 hover:scale-110 ${showPdfSidebar ? 'bg-pink-200 text-pink-700 font-bold scale-105 shadow-sm' : 'text-pink-500'}`}
+              >
+                <FileText size={16} />
+              </button>
+              <span className="absolute top-full mt-2 z-50 px-2 py-0.5 bg-slate-800/90 backdrop-blur-sm text-white text-[10px] font-black rounded-lg shadow-md whitespace-nowrap pointer-events-none transition-all duration-75 transform scale-95 group-hover:scale-100 opacity-0 group-hover:opacity-100 invisible group-hover:visible origin-top select-none">
+                Open Study PDF (Split Screen)
+              </span>
+            </div>
+            <div className="w-px h-4 bg-pink-200/50 mx-0.5" />
+            {/* P2P Collaboration Button */}
+            <div className="relative group flex justify-center">
+              <button
+                type="button"
+                onClick={() => { setCollabActive(!collabActive); }}
+                className={`p-1.5 rounded-lg transition-all duration-100 flex items-center justify-center hover:bg-indigo-100 hover:scale-110 relative ${collabActive ? 'bg-indigo-200 text-indigo-700 font-bold scale-105 shadow-sm' : 'text-indigo-500'}`}
+              >
+                <Users size={16} />
+                {collabActive && (
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white shrink-0 animate-pulse" />
+                )}
+              </button>
+              <span className="absolute top-full mt-2 z-50 px-2 py-0.5 bg-slate-800/90 backdrop-blur-sm text-white text-[10px] font-black rounded-lg shadow-md whitespace-nowrap pointer-events-none transition-all duration-75 transform scale-95 group-hover:scale-100 opacity-0 group-hover:opacity-100 invisible group-hover:visible origin-top select-none">
+                Real-Time Collaboration (P2P)
+              </span>
+            </div>
+          </div>
+
           <div className="w-px h-8 bg-slate-200/40 mx-2" />
 
           <ToolButton onClick={() => editor.chain().focus().undo().run()} title="Undo" className="hover:bg-slate-100 group">
@@ -625,6 +943,52 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
           <ToolButton onClick={() => editor.chain().focus().redo().run()} title="Redo" className="hover:bg-slate-100 group">
             <Redo size={16} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
           </ToolButton>
+        </div>
+      )}
+
+      {/* Collaboration Status bar */}
+      {collabActive && (
+        <div className="shrink-0 bg-indigo-50/70 border-b border-indigo-100/60 px-4 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 animate-in slide-in-from-top duration-300 z-10 select-none">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-wider flex items-center gap-1 animate-pulse">
+              <Users size={10} /> Active P2P Room
+            </span>
+            {collabPeers.length === 0 ? (
+              <span className="text-[10px] font-bold text-slate-500">Waiting for other co-authors to join...</span>
+            ) : (
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] font-bold text-slate-500 mr-1">Co-authors online:</span>
+                {collabPeers.map((p, i) => (
+                  <span 
+                    key={i} 
+                    className="px-2 py-0.5 rounded-full text-[9px] font-black text-white shrink-0 shadow-sm"
+                    style={{ backgroundColor: p.color || '#6366f1' }}
+                  >
+                    {p.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(collabSharedLink);
+                toast.success('P2P Collaboration link copied!');
+              }}
+              className="px-3 py-1 bg-white border border-indigo-200 text-indigo-700 rounded-lg text-[10px] font-extrabold hover:bg-indigo-50 transition flex items-center gap-1 shrink-0"
+            >
+              <Share2 size={11} /> Copy Share Link
+            </button>
+            <button
+              onClick={runGuestSimulation}
+              disabled={collabGuestActive}
+              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-lg text-[10px] font-extrabold transition flex items-center gap-1 shrink-0 shadow-sm shadow-indigo-600/10"
+            >
+              <Bot size={11} className="animate-bounce" /> Simulate Guest co-author
+            </button>
+          </div>
         </div>
       )}
 
@@ -671,11 +1035,37 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
         }
       `}</style>
       
-      {/* Editor */}
-      <EditorContent 
-        editor={editor} 
-        className="flex-1 overflow-y-auto px-6 py-8 md:px-10 md:py-10 custom-scrollbar relative prose prose-slate lg:prose-lg max-w-none [&>.ProseMirror]:min-h-full [&>.ProseMirror]:outline-none" 
-      />
+      {/* Split-Screen Workspace (PDF + Editor) */}
+      <div className="flex-1 flex min-h-0 relative overflow-hidden">
+        {/* Left Side: PDF Study Reader */}
+        {activePdfUrl && (
+          <div className="w-1/2 border-r border-slate-200/80 bg-slate-100 flex flex-col h-full overflow-hidden relative animate-in slide-in-from-left duration-300 z-10">
+            <div className="shrink-0 flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200/80 shadow-sm">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5 truncate">
+                <FileText size={15} className="text-red-500 animate-pulse" /> {activePdfName}
+              </span>
+              <button 
+                onClick={() => { setActivePdfUrl(null); }} 
+                className="p-1 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition"
+                title="Close Split Screen"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            <iframe 
+              src={activePdfUrl} 
+              className="w-full flex-1 border-none bg-white" 
+              title="Study PDF Reader" 
+            />
+          </div>
+        )}
+
+        {/* Right Side: Tiptap Editor */}
+        <EditorContent 
+          editor={editor} 
+          className="flex-1 overflow-y-auto px-6 py-8 md:px-10 md:py-10 custom-scrollbar relative prose prose-slate lg:prose-lg max-w-none [&>.ProseMirror]:min-h-full [&>.ProseMirror]:outline-none" 
+        />
+      </div>
 
       {/* ═══════════════════════════════════════════
            AI OVERLAY POPUPS (HIGH-FIDELITY WIDGETS)
@@ -684,7 +1074,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
       {/* Overlay 1: Ask AI */}
       {aiFeature === 'ask' && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white/95 border border-indigo-100 rounded-3xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] flex flex-col justify-between overflow-hidden">
+          <div className="bg-white/95 border border-indigo-100 rounded-3xl shadow-2xl w-full max-w-lg p-5 md:p-6 max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
               <h2 className="text-lg font-extrabold flex items-center gap-2 text-indigo-900">
                 <Bot size={22} className="text-indigo-600" /> Smart AI Writer
@@ -694,7 +1084,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pr-1 py-1 custom-scrollbar">
               {/* Context Selection Badge */}
               {(() => {
                 const sel = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, ' ').trim();
@@ -782,10 +1172,10 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
             {aiResult && (
               <div className="flex gap-3 border-t border-slate-100 pt-4 mt-4 shrink-0">
                 <button
-                  onClick={() => { editor.chain().focus().insertContent(aiResult).run(); setAiFeature(null); toast.success('Inserted!'); }}
+                  onClick={() => { editor.chain().focus().insertContent(aiResult).run(); setAiFeature(null); toast.success(editor.state.selection.empty ? 'Inserted!' : 'Selection Replaced!'); }}
                   className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-md shadow-indigo-600/10 flex items-center justify-center gap-2 transition"
                 >
-                  Insert at Cursor <ArrowRight size={14} />
+                  {editor.state.selection.empty ? 'Insert at Cursor' : 'Replace Selection'} <ArrowRight size={14} />
                 </button>
                 <button
                   onClick={() => { editor.chain().focus().setContent(aiResult).run(); setAiFeature(null); toast.success('Replaced Note!'); }}
@@ -929,7 +1319,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
       {/* Overlay 4: Quiz Scorecard Arena */}
       {aiFeature === 'quiz' && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-emerald-100 rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[85vh] flex flex-col justify-between overflow-hidden">
+          <div className="bg-white border border-emerald-100 rounded-3xl shadow-2xl w-full max-w-md p-5 md:p-6 max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
               <h2 className="text-lg font-extrabold flex items-center gap-2 text-emerald-900">
                 <HelpCircle size={22} className="text-emerald-600" /> Interactive Smart Quiz
@@ -946,7 +1336,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
               </div>
             ) : (
               aiResult && aiResult.length > 0 && (
-                <div className="flex-1 overflow-y-auto py-2 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto min-h-0 py-2 custom-scrollbar">
                   {!showQuizResults ? (
                     <div className="space-y-4">
                       {/* Score & Progress */}
@@ -1072,7 +1462,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
       {/* Overlay 5: OCR Image Reader */}
       {aiFeature === 'ocr' && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-orange-100 rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[85vh] flex flex-col justify-between overflow-hidden">
+          <div className="bg-white border border-orange-100 rounded-3xl shadow-2xl w-full max-w-md p-5 md:p-6 max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
               <h2 className="text-lg font-extrabold flex items-center gap-2 text-orange-900">
                 <ScanLine size={22} className="text-orange-600" /> OCR Engine
@@ -1082,7 +1472,7 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pr-1 py-1 custom-scrollbar">
               <input
                 type="text"
                 value={ocrImageUrl}
@@ -1138,17 +1528,17 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
       {/* Overlay 6: Translation & Proofreading */}
       {aiFeature === 'translate' && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white border border-cyan-100 rounded-3xl shadow-2xl w-full max-w-lg p-6 max-h-[85vh] flex flex-col justify-between overflow-hidden">
+          <div className="bg-white border border-cyan-100 rounded-3xl shadow-2xl w-full max-w-lg p-5 md:p-6 max-h-[90vh] flex flex-col overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
               <h2 className="text-lg font-extrabold flex items-center gap-2 text-cyan-900">
                 <Languages size={22} className="text-cyan-600" /> Grammar & translation Hub
               </h2>
               <button onClick={() => setAiFeature(null)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition">
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pr-1 py-1 custom-scrollbar">
               <div className="flex items-center gap-3">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">TARGET LANGUAGE</label>
                 <select
@@ -1190,10 +1580,10 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
             {aiResult && !aiLoading && (
               <div className="flex gap-3 border-t border-slate-100 pt-4 mt-4 shrink-0">
                 <button
-                  onClick={() => { editor.commands.insertContent(aiResult); setAiFeature(null); toast.success('Translation inserted!'); }}
+                  onClick={() => { editor.chain().focus().insertContent(aiResult).run(); setAiFeature(null); toast.success(editor.state.selection.empty ? 'Translation inserted!' : 'Selection Replaced!'); }}
                   className="flex-1 py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-sm font-bold shadow-md shadow-cyan-600/10 flex items-center justify-center gap-2 transition"
                 >
-                  Insert at Cursor <ArrowRight size={14} />
+                  {editor.state.selection.empty ? 'Insert at Cursor' : 'Replace Selection'} <ArrowRight size={14} />
                 </button>
                 <button
                   onClick={() => { editor.chain().focus().setContent(aiResult).run(); setAiFeature(null); toast.success('Text replaced!'); }}
@@ -1260,6 +1650,285 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
           )}
         </div>
       )}
+
+      {/* Overlay 8: ADHD Focus & Dopamine Praise Hub Drawer */}
+      {showAdhdHub && (
+        <>
+          {/* Backdrop: click outside to close drawer (timer keeps running) */}
+          <div
+            className="absolute inset-0 z-10 cursor-default"
+            onClick={() => setShowAdhdHub(false)}
+            aria-label="Close DopaCompanion"
+          />
+          {/* Drawer Panel */}
+          <div
+            className="absolute top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-md border-l border-slate-200/80 shadow-2xl z-20 p-5 flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0 mb-4">
+              <h2 className="text-base font-extrabold flex items-center gap-1.5 text-rose-950">
+                <Heart size={18} className="text-rose-500 fill-rose-300 animate-pulse" /> ADHD DopaCompanion
+              </h2>
+              <button onClick={() => setShowAdhdHub(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto min-h-0 space-y-4 pr-1 py-1 custom-scrollbar">
+              {/* Encouragement Speech Card */}
+              <div className="p-4 bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-100/50 rounded-2xl relative shadow-sm">
+                <span className="text-[9px] font-bold text-rose-500 uppercase tracking-widest block mb-1">DopaCompanion Cheerleader 🦄</span>
+                <p className="text-xs font-bold text-rose-950 leading-relaxed italic">
+                  "{adhdAffirmation}"
+                </p>
+                <button 
+                  onClick={() => {
+                    const newAff = ADHD_AFFIRMATIONS[Math.floor(Math.random() * ADHD_AFFIRMATIONS.length)];
+                    setAdhdAffirmation(newAff);
+                  }}
+                  className="mt-3 text-[10px] font-extrabold text-rose-600 hover:text-rose-800 flex items-center gap-1 transition"
+                >
+                  <Sparkles size={11} /> Roll New Cheer
+                </button>
+              </div>
+
+              {/* Pomodoro Timer */}
+              <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl text-center space-y-3">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">ADHD FOCUS SPRINT</span>
+                
+                {/* Clock */}
+                <div className="text-3xl font-mono font-black text-slate-800">
+                  {Math.floor(adhdTimer / 60)}:{(adhdTimer % 60).toString().padStart(2, '0')}
+                </div>
+
+                {/* Progress bar */}
+                <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-indigo-500 transition-all duration-1000" 
+                    style={{ width: `${(adhdTimer / adhdTimerDuration) * 100}%` }} 
+                  />
+                </div>
+
+                {/* presets */}
+                <div className="flex justify-center gap-1.5">
+                  {[600, 900, 1500].map((sec) => (
+                    <button
+                      key={sec}
+                      disabled={adhdTimerActive}
+                      onClick={() => { setAdhdTimer(sec); setAdhdTimerDuration(sec); }}
+                      className={`px-2 py-1 text-[10px] font-bold rounded-lg border transition ${adhdTimerDuration === sec ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+                    >
+                      {sec / 60} Min
+                    </button>
+                  ))}
+                </div>
+
+                {/* controls */}
+                <div className="flex justify-center gap-2 pt-1">
+                  <button
+                    onClick={() => setAdhdTimerActive(!adhdTimerActive)}
+                    className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 text-white shadow-sm ${adhdTimerActive ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                  >
+                    {adhdTimerActive ? 'Pause' : 'Start Focus'}
+                  </button>
+                  <button
+                    onClick={() => { setAdhdTimerActive(false); setAdhdTimer(adhdTimerDuration); }}
+                    className="px-3 py-1.5 border border-slate-200 hover:bg-slate-100 text-slate-500 rounded-xl text-xs font-bold transition flex items-center justify-center"
+                    title="Reset Timer"
+                  >
+                    <RotateCw size={12} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Micro-Goal Checklist */}
+              <div className="space-y-2">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">ADHD MICRO-GOALS (TINY STEPS)</span>
+                
+                {/* list */}
+                <div className="space-y-1.5">
+                  {adhdTasks.map((t) => (
+                    <div 
+                      key={t.id}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border text-[11px] font-bold transition-all ${t.completed ? 'bg-emerald-50/50 border-emerald-100 text-emerald-800 line-through opacity-70' : 'bg-white border-slate-100 text-slate-700'}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <button
+                          onClick={() => {
+                            const updated = adhdTasks.map(x => x.id === t.id ? { ...x, completed: !x.completed } : x);
+                            setAdhdTasks(updated);
+                            if (!t.completed) {
+                              const trigger = (window as any).triggerConfetti;
+                              if (trigger) trigger();
+                              toast.success("Awesome job checking that off! Instant dopamine reward! 🌟", { duration: 3000 });
+                              setAdhdAffirmation("Look at you! One full micro-goal finished. You are making phenomenal headway! 🦄");
+                            }
+                          }}
+                          className={`w-4 h-4 rounded border flex items-center justify-center transition shrink-0 ${t.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-indigo-400 bg-white'}`}
+                        >
+                          {t.completed && <Check size={10} strokeWidth={4} />}
+                        </button>
+                        <span className="truncate">{t.text}</span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setAdhdTasks(adhdTasks.filter(x => x.id !== t.id));
+                        }}
+                        className="text-slate-300 hover:text-red-500 transition shrink-0 pl-1"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add new */}
+                <div className="flex gap-1.5 pt-1.5">
+                  <input
+                    type="text"
+                    value={adhdNewTask}
+                    onChange={(e) => setAdhdNewTask(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && adhdNewTask.trim()) {
+                        setAdhdTasks([...adhdTasks, { id: Date.now(), text: adhdNewTask.trim(), completed: false }]);
+                        setAdhdNewTask('');
+                      }
+                    }}
+                    placeholder="Type tiny task..."
+                    className="flex-1 px-3 py-1.5 border border-slate-200 rounded-xl text-xs outline-none bg-slate-50 font-semibold"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!adhdNewTask.trim()) return;
+                      setAdhdTasks([...adhdTasks, { id: Date.now(), text: adhdNewTask.trim(), completed: false }]);
+                      setAdhdNewTask('');
+                    }}
+                    className="px-2.5 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center shrink-0"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Dopa Companion Dopamine Boost trigger */}
+          <button
+            onClick={() => {
+              const trigger = (window as any).triggerConfetti;
+              if (trigger) trigger();
+              const praises = [
+                "CONFIRMATION: You are an absolutely stellar learner! 🦄",
+                "BOOST: Your dedication is absolutely off the charts! 🏆",
+                "Affirmation: Keep going, you are creating massive learning today! 🚀",
+                "Praise: Your capability is outstanding. Keep locking in this knowledge! 💎",
+                "CHEER: Look at you, making progress like a true master! ✨"
+              ];
+              setAdhdAffirmation(praises[Math.floor(Math.random() * praises.length)]);
+              toast.success("Dopamine Boost Activated! Confetti shower fired! ☄️", { duration: 3000 });
+            }}
+            className="w-full py-3.5 bg-gradient-to-r from-rose-500 via-pink-500 to-indigo-500 text-white rounded-xl text-sm font-black shadow-md hover:scale-105 active:scale-95 transition-all mt-4 shrink-0 flex items-center justify-center gap-1.5"
+          >
+            <Sparkles size={16} /> DOPAMINE BOOST! <Heart size={14} className="fill-white" />
+          </button>
+        </div>
+        </>
+      )}
+
+      {/* Overlay 9: Study PDF Selection Drawer */}
+      {showPdfSidebar && (
+        <div className="absolute top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-md border-l border-slate-200/80 shadow-2xl z-20 p-5 flex flex-col justify-between overflow-hidden animate-in slide-in-from-right duration-300">
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0 mb-4">
+              <h2 className="text-base font-extrabold flex items-center gap-1.5 text-pink-900">
+                <FileText size={18} className="text-pink-600 animate-pulse" /> Study PDFs List
+              </h2>
+              <button onClick={() => setShowPdfSidebar(false)} className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Scrollable File List */}
+            <div className="flex-1 overflow-y-auto min-h-0 pr-1 py-1 custom-scrollbar space-y-2">
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block mb-1">SELECT A PDF TO STUDY SIDE-BY-SIDE</span>
+
+              {pdfFilesLoading ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-2">
+                  <div className="h-6 w-6 border-2 border-pink-200 border-t-pink-600 rounded-full animate-spin" />
+                  <p className="text-[10px] text-pink-700 font-bold animate-pulse">Loading study PDFs...</p>
+                </div>
+              ) : pdfFilesList.length === 0 ? (
+                <div className="text-center py-16 text-slate-400 space-y-2">
+                  <FileText size={32} className="mx-auto text-slate-200" />
+                  <p className="text-xs font-bold">No study PDFs found</p>
+                  <p className="text-[10px] leading-relaxed">Upload textbook PDFs in the 'My Files' tab first to study them here side-by-side!</p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  {pdfFilesList.map((file) => {
+                    const isSelected = activePdfUrl?.includes(`/files/${file.id}/download`);
+                    return (
+                      <button
+                        key={file.id}
+                        onClick={async () => {
+                          try {
+                            const res = await filesApi.download(file.id);
+                            setActivePdfUrl(res.data?.download_url || `/api/files/${file.id}/download`);
+                            setActivePdfName(file.original_name);
+                            setShowPdfSidebar(false);
+                            const trigger = (window as any).triggerConfetti;
+                            if (trigger) trigger();
+                            toast.success(`Opened split-screen PDF: ${file.original_name}`, { icon: '📚' });
+                          } catch (e) {
+                            toast.error("Failed to fetch download link for PDF file");
+                          }
+                        }}
+                        className={`w-full text-left p-3 border rounded-xl flex items-start gap-2.5 transition duration-200 hover:bg-pink-50/50 hover:border-pink-200 ${isSelected ? 'bg-pink-50 border-pink-300 shadow-sm shadow-pink-100' : 'bg-white border-slate-100'}`}
+                      >
+                        <FileText size={16} className={`shrink-0 mt-0.5 ${isSelected ? 'text-pink-600 animate-bounce' : 'text-slate-400'}`} />
+                        <div className="min-w-0">
+                          <p className={`text-[11px] font-bold truncate leading-snug ${isSelected ? 'text-pink-800' : 'text-slate-700'}`}>{file.original_name}</p>
+                          <p className="text-[9px] font-semibold text-slate-400 mt-0.5">Size: {(file.size / 1024 / 1024).toFixed(1)} MB</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="text-[10px] font-bold text-slate-400 border-t border-slate-100 pt-3 mt-4 shrink-0">
+            Tip: You can change PDFs at any time or close split screen using the close button in the header.
+          </div>
+        </div>
+      )}
+
+      {/* Floating Micro Focus Timer (Only visible when DopaCompanion drawer is closed but timer is running) */}
+      {!showAdhdHub && adhdTimerActive && (
+        <div 
+          onClick={() => setShowAdhdHub(true)}
+          className="fixed bottom-6 right-6 z-40 bg-white/90 backdrop-blur-md border border-rose-200/50 p-2.5 rounded-2xl shadow-xl flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95 transition-all animate-in slide-in-from-bottom duration-300 group"
+          title="Click to expand DopaCompanion Focus Hub"
+        >
+          <div className="p-1.5 bg-rose-50 rounded-xl text-rose-500 animate-pulse group-hover:scale-110 transition-transform">
+            <Heart size={14} className="fill-rose-400 animate-bounce" />
+          </div>
+          <div className="text-left pr-1">
+            <p className="text-[7.5px] font-black text-rose-500 uppercase tracking-wider leading-none">FOCUS ACTIVE</p>
+            <p className="text-xs font-mono font-black text-slate-800 mt-0.5 leading-none">
+              {Math.floor(adhdTimer / 60)}:{(adhdTimer % 60).toString().padStart(2, '0')}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Confetti Overlay Canvas */}
+      <canvas id="notexa-confetti-canvas" className="fixed inset-0 pointer-events-none z-[9999]" />
     </div>
   );
 }

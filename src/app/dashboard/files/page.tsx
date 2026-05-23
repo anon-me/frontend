@@ -5,7 +5,7 @@ import { filesApi } from '@/services/api';
 import { useAuthStore } from '@/contexts/authStore';
 import { FileItem } from '@/types';
 import toast from 'react-hot-toast';
-import { Upload, Download, Trash2, FolderOpen, File, Image, FileText } from 'lucide-react';
+import { Upload, Download, Trash2, FolderOpen, File, Image, FileText, Eye, X } from 'lucide-react';
 
 function formatSize(bytes: number): string {
   if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
@@ -26,6 +26,24 @@ export default function FilesPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Lightbox Document Viewer states
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [viewerName, setViewerName] = useState('');
+  const [viewerIsImage, setViewerIsImage] = useState(false);
+
+  const handleViewFile = async (file: FileItem) => {
+    try {
+      const res = await filesApi.download(file.id);
+      const url = res.data.download_url || `/api/files/${file.id}/download`;
+      setViewerUrl(url);
+      setViewerName(file.original_name);
+      setViewerIsImage(file.mime_type?.startsWith('image/') || false);
+      toast.success(`Opening reader: ${file.original_name}`, { icon: '📖' });
+    } catch {
+      toast.error('Failed to open file viewer');
+    }
+  };
 
   const fetchFiles = async () => {
     try {
@@ -124,11 +142,57 @@ export default function FilesPage() {
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
+                {(file.mime_type?.includes('pdf') || file.mime_type?.startsWith('image/') || file.original_name?.toLowerCase().endsWith('.pdf')) && (
+                  <button 
+                    onClick={() => handleViewFile(file)} 
+                    title="View Document Inline" 
+                    className="p-2 text-gray-400 hover:text-emerald-600 transition"
+                  >
+                    <Eye size={16} />
+                  </button>
+                )}
                 <button onClick={() => handleDownload(file.id)} className="p-2 text-gray-400 hover:text-brand-600 transition"><Download size={16} /></button>
                 <button onClick={() => handleDelete(file.id)} className="p-2 text-gray-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Lightbox PDF / Image Reader Modal */}
+      {viewerUrl && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex flex-col justify-between z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl mx-auto flex flex-col h-[90vh] overflow-hidden border border-gray-150">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+              <h2 className="text-base font-extrabold text-gray-800 flex items-center gap-2 truncate">
+                <FileText size={18} className="text-red-500" /> {viewerName}
+              </h2>
+              <button 
+                onClick={() => setViewerUrl(null)} 
+                className="p-1.5 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Viewer Pane */}
+            <div className="flex-1 min-h-0 bg-gray-50 flex items-center justify-center p-2">
+              {viewerIsImage ? (
+                <img 
+                  src={viewerUrl} 
+                  alt={viewerName} 
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-md border border-gray-200" 
+                />
+              ) : (
+                <iframe 
+                  src={viewerUrl} 
+                  className="w-full h-full border-none rounded-lg bg-white" 
+                  title="Document Lightbox Viewer" 
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
