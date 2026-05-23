@@ -4,55 +4,50 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/contexts/authStore';
 import { useRouter } from 'next/navigation';
+import { FileEdit, Users2, Zap, CloudUpload, ShieldCheck, Target } from 'lucide-react';
 
 const features = [
   {
-    icon: '✏️',
+    icon: FileEdit,
     title: 'Rich Academic Editor',
     desc: 'Distraction-free rich text editor with full support for headings, bold/italic, code blocks, checklists, and images.',
-    color: '#6366f1',
-    gradient: 'from-indigo-500/12 to-indigo-500/5',
-    border: 'group-hover:border-indigo-400/40',
+    color: 'text-indigo-600',
+    bg: 'bg-indigo-50/50',
   },
   {
-    icon: '👥',
+    icon: Users2,
     title: 'Peer Connections & Friends',
     desc: 'Connect with peers by username, send direct friend requests, and manage your cooperative academic circle.',
-    color: '#10b981',
-    gradient: 'from-emerald-500/12 to-emerald-500/5',
-    border: 'group-hover:border-emerald-400/40',
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50/50',
   },
   {
-    icon: '⚡',
+    icon: Zap,
     title: 'Real-time WebRTC Collaboration',
     desc: 'Real-time peer-to-peer collaboration. See changes, text inputs, and focus indicators instantly as they happen.',
-    color: '#f43f5e',
-    gradient: 'from-rose-500/12 to-rose-500/5',
-    border: 'group-hover:border-rose-400/40',
+    color: 'text-rose-600',
+    bg: 'bg-rose-50/50',
   },
   {
-    icon: '📁',
+    icon: CloudUpload,
     title: 'Secure Cloud Attachments',
     desc: 'Attach reference slides, research files, and PDF materials to notes instantly. Powered by Cloudflare R2.',
-    color: '#f59e0b',
-    gradient: 'from-amber-500/12 to-amber-500/5',
-    border: 'group-hover:border-amber-400/40',
+    color: 'text-amber-600',
+    bg: 'bg-amber-50/50',
   },
   {
-    icon: '🔒',
+    icon: ShieldCheck,
     title: 'Granular Sharing Controls',
     desc: 'Keep complete ownership of your work. Share with specific peers and assign view-only or full editor access.',
-    color: '#8b5cf6',
-    gradient: 'from-violet-500/12 to-violet-500/5',
-    border: 'group-hover:border-violet-400/40',
+    color: 'text-violet-600',
+    bg: 'bg-violet-50/50',
   },
   {
-    icon: '🦄',
+    icon: Target,
     title: 'ADHD DopaCompanion Focus',
     desc: 'A revolutionary study sprint workspace. Celebrate tiny academic achievements with positive dopamine rewards and confetti.',
-    color: '#ec4899',
-    gradient: 'from-pink-500/12 to-pink-500/5',
-    border: 'group-hover:border-pink-400/40',
+    color: 'text-pink-600',
+    bg: 'bg-pink-50/50',
   },
 ];
 
@@ -94,24 +89,21 @@ export default function HomePage() {
       
       {/* ── NAVBAR ── */}
       <nav className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 lg:px-20 py-4 transition-all duration-300 ${scrolled ? 'bg-white/80 backdrop-blur-xl shadow-[0_2px_20px_-8px_rgba(0,0,0,0.08)] border-b border-slate-200/40' : 'bg-transparent'}`}>
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-gradient-to-tr from-[#6366f1] via-[#8b5cf6] to-[#ec4899] rounded-xl flex items-center justify-center text-white font-extrabold text-lg shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-            N
-          </div>
-          <span className="text-[22px] font-black tracking-tight bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent">NotExA</span>
+        <Link href="/" className="flex items-center gap-1.5 group">
+          <span className="text-[28px] font-black tracking-tighter bg-gradient-to-br from-[#3525cd] to-[#4f46e5] bg-clip-text text-transparent group-hover:opacity-90 transition-opacity font-headline">NotExA</span>
         </Link>
         
         <div className="hidden md:flex items-center gap-10">
           <a href="#features" className="text-[14px] font-bold text-slate-500 hover:text-indigo-600 transition-colors duration-200">Features</a>
           <Link href="/auth/login" className="text-[14px] font-bold text-slate-500 hover:text-indigo-600 transition-colors duration-200">Sign In</Link>
-          <Link href="/auth/register" className="px-6 py-2.5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl text-sm font-bold shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
+          <Link href="/auth/register" className="px-6 py-2.5 bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white rounded-xl text-sm font-bold shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200">
             Get Started Free →
           </Link>
         </div>
         
         <div className="md:hidden flex gap-2">
           <Link href="/auth/login" className="px-4 py-2 text-sm font-bold text-slate-600">Login</Link>
-          <Link href="/auth/register" className="px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold shadow">Sign Up</Link>
+          <Link href="/auth/register" className="px-4 py-2 bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white rounded-xl text-sm font-bold shadow">Sign Up</Link>
         </div>
       </nav>
 
@@ -148,7 +140,7 @@ export default function HomePage() {
 
             <h1 className="text-[clamp(44px,5.2vw,76px)] font-black leading-[1.03] tracking-[-3px] text-slate-900 mb-6">
               Interactive study<br />notebooks for<br />
-              <span className="bg-gradient-to-r from-[#6366f1] via-[#8b5cf6] to-[#ec4899] bg-clip-text text-transparent">brilliant minds.</span>
+              <span className="bg-gradient-to-br from-[#3525cd] to-[#4f46e5] bg-clip-text text-transparent font-headline">brilliant minds.</span>
             </h1>
 
             <p className="text-[18px] text-slate-500 leading-relaxed mb-10 max-w-[520px] font-medium">
@@ -156,7 +148,7 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-wrap gap-4 mb-16">
-              <Link href="/auth/register" className="inline-flex items-center gap-3 px-8 py-4.5 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl text-base font-extrabold shadow-xl hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
+              <Link href="/auth/register" className="inline-flex items-center gap-3 px-8 py-4.5 bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white rounded-2xl text-base font-extrabold shadow-xl hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
                 Start Learning Free
                 <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
               </Link>
@@ -251,7 +243,7 @@ export default function HomePage() {
 
               {/* Floating Element 2: AI Summarized badge */}
               <div className="absolute -top-6 -right-8 bg-white rounded-2xl px-4.5 py-3.5 shadow-[0_15px_40px_-5px_rgba(30,41,59,0.15)] border border-slate-200/80 flex items-center gap-3 animate-[slideUpFade_0.6s_ease_0s_both]">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#6366f1] via-[#8b5cf6] to-[#ec4899] flex items-center justify-center text-lg shadow-md shadow-indigo-500/10">✨</div>
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3525cd] to-[#4f46e5] flex items-center justify-center text-lg shadow-md shadow-indigo-500/10">✨</div>
                 <div>
                   <div className="text-[12.5px] font-black text-slate-800">AI Summary</div>
                   <div className="text-[11px] text-slate-400 font-bold">Highlights synthesized</div>
@@ -280,28 +272,22 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f, i) => (
-              <div
-                key={i}
-                onMouseEnter={() => setActiveFeature(i)}
-                className={`group relative bg-slate-50 border rounded-3xl p-8.5 transition-all duration-300 cursor-default overflow-hidden ${i === activeFeature ? 'border-slate-300 shadow-xl -translate-y-1 bg-white' : 'border-slate-200/80 hover:-translate-y-1 hover:shadow-xl hover:border-slate-300 hover:bg-white'}`}
-              >
-                {/* Hover gradient background mask */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${f.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${i === activeFeature ? 'opacity-100' : ''}`} />
-                
-                {/* Glowing top line indicators */}
-                <div className="absolute top-0 left-6 right-6 h-[2.5px] rounded-b-full transition-all duration-300 scale-x-0 group-hover:scale-x-100 origin-left" style={{ background: f.color, ...(i === activeFeature ? { transform: 'scaleX(1)' } : {}) }} />
-
-                <div className="relative z-10">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm transition-transform duration-300 group-hover:scale-105" style={{ background: `${f.color}15` }}>
-                    {f.icon}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((f, i) => {
+              const IconComponent = f.icon;
+              return (
+                <div
+                  key={i}
+                  className="group bg-white border border-slate-100 rounded-2xl p-7.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_50px_-12px_rgba(15,23,42,0.05)] hover:border-slate-200/80 flex flex-col items-start"
+                >
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-5.5 ${f.bg} ${f.color} shadow-sm border border-slate-100`}>
+                    <IconComponent size={20} strokeWidth={2.2} />
                   </div>
-                  <h3 className="text-[19px] font-black tracking-tight text-slate-950 mb-3">{f.title}</h3>
-                  <p className="text-[14.5px] text-slate-500 leading-relaxed font-medium">{f.desc}</p>
+                  <h3 className="text-[17px] font-bold tracking-tight text-slate-900 mb-2.5 transition-colors group-hover:text-indigo-600">{f.title}</h3>
+                  <p className="text-[13.5px] text-slate-500 leading-relaxed font-medium">{f.desc}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -321,7 +307,7 @@ export default function HomePage() {
             NotExA integrates scientific micro-rewards to praise learning progress. Break complex research topics into tiny, highly visual checklists.
           </p>
           <div className="flex justify-center">
-            <Link href="/auth/register" className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-2xl text-base font-extrabold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all">
+            <Link href="/auth/register" className="px-8 py-4 bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white rounded-2xl text-base font-extrabold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all">
               Initialize Your First Sprint
             </Link>
           </div>
@@ -348,7 +334,7 @@ export default function HomePage() {
           </p>
           
           <div className="flex flex-wrap gap-4 justify-center">
-            <Link href="/auth/register" className="inline-flex items-center gap-3 px-9 py-4 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl text-base font-black shadow-xl hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
+            <Link href="/auth/register" className="inline-flex items-center gap-3 px-9 py-4 bg-gradient-to-br from-[#3525cd] to-[#4f46e5] text-white rounded-2xl text-base font-black shadow-xl hover:-translate-y-1 hover:shadow-2xl transition-all duration-300">
               Start Free Account
               <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
             </Link>
@@ -362,9 +348,8 @@ export default function HomePage() {
       {/* ── FOOTER ── */}
       <footer className="border-t border-slate-200/60 bg-white">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-20 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-tr from-slate-900 to-indigo-950 rounded-lg flex items-center justify-center text-white font-extrabold text-sm shadow-md">N</div>
-            <span className="text-[15px] font-extrabold text-slate-850">NotExA</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[20px] font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">NotExA</span>
             <span className="text-slate-300 text-sm mx-2">·</span>
             <p className="text-[13px] text-slate-400 font-bold">© 2026 College Minor Project</p>
           </div>
