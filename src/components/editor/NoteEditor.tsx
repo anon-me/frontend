@@ -272,8 +272,14 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setAiResult('');
     const originalText = editor.getText();
     try {
-      const sysPrompt = "You are a stellar academic writing assistant. Answer the user prompt concisely and structure your content beautifully using readable paragraphs or markdown lists.";
-      const res = await runAICall(sysPrompt, `User prompt: ${aiPrompt}\n\nContext of note so far:\n${originalText}`);
+      const sysPrompt = "You are a stellar academic writing assistant. Answer the user prompt/question directly and concisely, structuring your content beautifully using readable paragraphs or markdown lists. Ignore the optional reference context unless the user request is specifically referencing it.";
+      
+      let userPromptBody = `PRIMARY TASK: Answer the following user request directly: "${aiPrompt}"`;
+      if (originalText.trim().length > 0) {
+        userPromptBody += `\n\nOPTIONAL STUDY CONTEXT:\nThe user is currently writing a study note. Here is their note content for REFERENCE only. ONLY incorporate, refer to, or summarize this note context if the user's primary request above explicitly asks about it or references the note. If the request is a general question (e.g. explaining a new concept, coding, or facts), IGNORE this study context completely and answer the user's primary request directly:\n\"\"\"\n${originalText}\n\"\"\"`;
+      }
+      
+      const res = await runAICall(sysPrompt, userPromptBody);
       setAiResult(res);
     } catch (err: any) {
       toast.error(err.message || "Failed to generate AI response.");
@@ -659,29 +665,57 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-1 custom-scrollbar">
+              {/* Context Selection Badge */}
+              {(() => {
+                const sel = editor.state.doc.textBetween(editor.state.selection.from, editor.state.selection.to, ' ').trim();
+                if (sel) {
+                  return (
+                    <div className="px-3.5 py-2.5 bg-indigo-50/50 border border-indigo-100/40 rounded-2xl flex flex-col gap-1 text-left animate-in slide-in-from-top-2 duration-300">
+                      <span className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest flex items-center gap-1">
+                        <Sparkles size={10} className="animate-pulse" /> Active Highlighted Text (Target Selection)
+                      </span>
+                      <p className="text-xs font-semibold text-slate-600 truncate italic">"{sel}"</p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <textarea
                 value={aiPrompt}
                 onChange={(e) => setAiPrompt(e.target.value)}
-                placeholder="Ask me to explain a concept, structure a paragraph, create tables, or draft research summaries..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAskAI();
+                  }
+                }}
+                autoFocus={true}
+                placeholder="Ask anything! E.g. 'explain photosynthesis', 'draft a comparison table', 'translate to French'..."
                 rows={3}
-                className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm transition-all bg-slate-50 resize-none font-medium"
+                className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm transition-all bg-slate-50 resize-none font-semibold text-slate-700 placeholder:text-slate-400"
               />
+
+              <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold px-1 select-none">
+                <span>Press Enter to Submit</span>
+                <span>Shift+Enter for new line</span>
+              </div>
 
               {/* Prebuilt Action Chips */}
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">QUICK EDITS (USES SELECTED TEXT)</p>
                 <div className="flex flex-wrap gap-2">
-                  <button onClick={() => handleQuickPrompt('simplify')} className="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold flex items-center gap-1 transition">
-                    <Sparkles size={12} /> Simplify Text
+                  <button onClick={() => handleQuickPrompt('simplify')} className="px-3.5 py-2 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-all duration-300 active:scale-95 shadow-sm shadow-indigo-100/50">
+                    <Sparkles size={12} className="text-indigo-500" /> Simplify Text
                   </button>
-                  <button onClick={() => handleQuickPrompt('elaborate')} className="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold flex items-center gap-1 transition">
-                    <Wand2 size={12} /> Elaborate Concept
+                  <button onClick={() => handleQuickPrompt('elaborate')} className="px-3.5 py-2 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-all duration-300 active:scale-95 shadow-sm shadow-indigo-100/50">
+                    <Wand2 size={12} className="text-purple-500" /> Elaborate Concept
                   </button>
-                  <button onClick={() => handleQuickPrompt('professional')} className="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold flex items-center gap-1 transition">
-                    <Award size={12} /> Make Academic
+                  <button onClick={() => handleQuickPrompt('professional')} className="px-3.5 py-2 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-all duration-300 active:scale-95 shadow-sm shadow-indigo-100/50">
+                    <Award size={12} className="text-amber-500" /> Make Academic
                   </button>
-                  <button onClick={() => handleQuickPrompt('actions')} className="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-full text-xs font-semibold flex items-center gap-1 transition">
-                    <Check size={12} /> Action Items
+                  <button onClick={() => handleQuickPrompt('actions')} className="px-3.5 py-2 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold flex items-center gap-1 transition-all duration-300 active:scale-95 shadow-sm shadow-indigo-100/50">
+                    <Check size={12} className="text-emerald-500" /> Action Items
                   </button>
                 </div>
               </div>
@@ -689,8 +723,12 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
               {/* Loading State */}
               {aiLoading && (
                 <div className="flex flex-col items-center justify-center py-10 gap-3">
-                  <div className="h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-                  <p className="text-xs text-indigo-700 font-bold animate-pulse">Assistant is drafting model output...</p>
+                  <div className="flex gap-1.5 items-center">
+                    <div className="h-2.5 w-2.5 bg-indigo-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <div className="h-2.5 w-2.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <div className="h-2.5 w-2.5 bg-indigo-400 rounded-full animate-bounce" />
+                  </div>
+                  <p className="text-xs text-indigo-700 font-bold animate-pulse">Drafting premium model output...</p>
                 </div>
               )}
 
