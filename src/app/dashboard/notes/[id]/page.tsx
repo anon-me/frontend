@@ -173,6 +173,7 @@ export default function NoteDetailPage() {
            content={content}
            onChange={setContent}
            editable={canEdit}
+           noteId={noteId}
         />
       </div>
 

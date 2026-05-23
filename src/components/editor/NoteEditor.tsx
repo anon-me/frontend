@@ -20,15 +20,16 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { publicApi, filesApi } from '@/services/api';
+import { publicApi, filesApi, notesApi } from '@/services/api';
 
 interface NoteEditorProps {
   content: string;
   onChange: (content: string) => void;
   editable?: boolean;
+  noteId?: number;
 }
 
-export default function NoteEditor({ content, onChange, editable = true }: NoteEditorProps) {
+export default function NoteEditor({ content, onChange, editable = true, noteId }: NoteEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -604,6 +605,24 @@ export default function NoteEditor({ content, onChange, editable = true }: NoteE
     setAiFeature('summarize');
     setAiLoading(true);
     setAiResult(null);
+
+    // 1. Try to call the backend AI Summary endpoint first if noteId is present (no frontend API keys needed)
+    if (noteId) {
+      try {
+        const apiRes = await notesApi.aiSummary(noteId);
+        const data = apiRes.data?.data || apiRes.data || {};
+        const summaryText = typeof data === 'string' ? data : (data.summary || data.content || data.html || '');
+        if (summaryText) {
+          setAiResult(summaryText);
+          setAiLoading(false);
+          return;
+        }
+      } catch (apiErr: any) {
+        console.warn("Backend AI summary failed, falling back to client-side direct AI call...", apiErr);
+      }
+    }
+
+    // 2. Fallback to client-side direct AI call using personal API keys
     const contentText = editor.getText() || 'Start typing notes to enable smart summarization.';
     try {
       const sysPrompt = "Create a structured, executive study summary of the text provided. Highlight the core theme, list 3 key highlights in a bulleted list, and finish with a summary outline. Respond with clean, beautiful HTML format using <h3>, <p>, and <ul> tags. CRITICAL: Output ONLY the direct HTML content. Absolutely NO introductory conversational remarks, preamble, greetings, or outro comments. Start directly with the first HTML tag.";
