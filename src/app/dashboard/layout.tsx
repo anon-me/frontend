@@ -116,18 +116,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className={`min-h-screen lg:flex block bg-gray-50 ${isPookie ? 'pookie-mode' : ''}`}>
-      {/* Mobile overlay */}
+    <div className={`flex h-screen overflow-hidden bg-gray-50 ${isPookie ? 'pookie-mode' : ''}`}>
+      {/* Mobile overlay / backdrop */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
       <aside className={`
         fixed lg:relative inset-y-0 left-0 z-50 bg-white border-r border-slate-100/60
-        transform transition-all duration-300 lg:transform-none shadow-[2px_0_24px_-12px_rgba(0,0,0,0.06)] shrink-0
+        transform transition-transform duration-300 lg:transform-none shadow-[2px_0_24px_-12px_rgba(0,0,0,0.06)] shrink-0 h-full
+        w-72 lg:${isCollapsed ? 'w-[85px]' : 'w-64'}
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        ${isCollapsed ? 'w-[85px]' : 'w-[280px]'}
       `}>
         {/* Floating Collapse Toggle on Sidebar Border - centered next to Settings options and in a highly clickable right size */}
         <button
@@ -245,11 +245,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main content wrapper */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar for mobile */}
-        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="text-gray-600">
+        <header className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shrink-0">
+          <button onClick={() => setSidebarOpen(true)} className="text-gray-600 focus:outline-none" aria-label="Toggle Menu">
             <Menu size={24} />
           </button>
           <span className="font-bold text-gray-900">NotExA</span>
@@ -257,8 +257,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto bg-gray-50/50">
-          <div className="mx-auto max-w-[1400px] w-full px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50/50">
+          <div className="mx-auto max-w-[1400px] w-full p-4 lg:p-8">
             {children}
           </div>
         </main>
