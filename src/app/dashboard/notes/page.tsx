@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { notesApi } from '@/services/api';
 import { Note } from '@/types';
 import toast from 'react-hot-toast';
-import { Pin, Zap, Star, MoreHorizontal, Info, X, Search, Filter, ArrowDownUp } from 'lucide-react';
+import { Pin, Zap, Star, MoreHorizontal, Info, X, Search, Filter, ArrowDownUp, GripVertical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -110,7 +110,6 @@ function SortableNoteCard({ note, tag, onPin, onArchive, onTrash, viewMode, acti
   const router = useRouter();
   const [showActivity, setShowActivity] = useState(false);
   
-  // Only enable drag if we're in custom sort mode, otherwise dragging breaks auto-sorting flow
   const {
     attributes,
     listeners,
@@ -124,7 +123,7 @@ function SortableNoteCard({ note, tag, onPin, onArchive, onTrash, viewMode, acti
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : showActivity ? 30 : 'auto',
-    opacity: isDragging ? 0.8 : 1,
+    opacity: isDragging ? 0.75 : 1,
   };
 
   const Icon = tag.icon || Hash;
@@ -168,10 +167,20 @@ function SortableNoteCard({ note, tag, onPin, onArchive, onTrash, viewMode, acti
       ref={setNodeRef}
       style={style}
       {...attributes}
-      {...listeners}
-      onClick={() => { if (!showActivity) router.push(`/dashboard/notes/${note.id}`); }}
-      className={`bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] border ${note.is_pinned ? 'border-indigo-200 bg-indigo-50/10' : 'border-slate-100/60'} flex hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 relative group ${activeSortMode === 'custom' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${isDragging ? 'shadow-2xl cursor-grabbing scale-[1.04]' : ''} ${viewMode === 'grid' ? 'flex-col h-[320px]' : 'flex-row items-center gap-4 sm:gap-6 h-auto sm:h-28'}`}
+      onClick={() => { if (!showActivity && !isDragging) router.push(`/dashboard/notes/${note.id}`); }}
+      className={`bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] border ${note.is_pinned ? 'border-indigo-200 bg-indigo-50/10' : 'border-slate-100/60'} flex hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:scale-[1.02] hover:-translate-y-1 transition-all duration-300 relative group cursor-pointer ${isDragging ? 'shadow-2xl scale-[1.04] rotate-1 ring-2 ring-indigo-400/40' : ''} ${viewMode === 'grid' ? 'flex-col h-[320px]' : 'flex-row items-center gap-4 sm:gap-6 h-auto sm:h-28'}`}
     >
+      {/* Drag handle — only visible in custom sort mode */}
+      {activeSortMode === 'custom' && (
+        <div
+          {...listeners}
+          onClick={e => e.stopPropagation()}
+          className={`absolute ${viewMode === 'grid' ? 'top-3 left-3' : 'left-2 top-1/2 -translate-y-1/2'} p-1.5 rounded-lg text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 cursor-grab active:cursor-grabbing transition-all opacity-0 group-hover:opacity-100 z-10`}
+          title="Drag to reorder"
+        >
+          <GripVertical size={16} strokeWidth={2} />
+        </div>
+      )}
       {note.is_pinned && (
         <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-md border-2 border-white z-20">
           <Pin size={14} className="fill-indigo-600" />
@@ -296,7 +305,7 @@ export default function NotesPage() {
 
   // Filter and Sort states
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'custom'|'recent'|'oldest'|'alphabetical'>('recent');
+  const [sortBy, setSortBy] = useState<'custom'|'recent'|'oldest'|'alphabetical'>('custom');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -522,7 +531,7 @@ export default function NotesPage() {
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="appearance-none pl-10 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-sm cursor-pointer"
                 >
-                  <option value="custom">Custom Order</option>
+                  <option value="custom">Custom Order ✦</option>
                   <option value="recent">Recently Updated</option>
                   <option value="oldest">Oldest First</option>
                   <option value="alphabetical">Alphabetical</option>
