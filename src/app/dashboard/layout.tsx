@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className={`min-h-screen flex bg-gray-50 ${isPookie ? 'pookie-mode' : ''}`}>
+    <div className={`min-h-screen lg:flex block bg-gray-50 ${isPookie ? 'pookie-mode' : ''}`}>
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
@@ -128,7 +128,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         transform transition-all duration-300 lg:transform-none shadow-[2px_0_24px_-12px_rgba(0,0,0,0.06)] shrink-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         ${isCollapsed ? 'w-[85px]' : 'w-[280px]'}
-        relative
       `}>
         {/* Floating Collapse Toggle on Sidebar Border - centered next to Settings options and in a highly clickable right size */}
         <button

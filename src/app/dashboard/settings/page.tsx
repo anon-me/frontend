@@ -235,7 +235,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="h-full w-full flex flex-col gap-4 sm:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:overflow-hidden">
+    <div className="w-full flex flex-col gap-4 sm:gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* Top Header Card */}
       <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
@@ -335,7 +335,7 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 flex-1 min-h-0">
 
         {/* Left Column (Span 2) */}
-        <div className="lg:col-span-2 flex flex-col gap-4 sm:gap-6 lg:h-full lg:overflow-hidden">
+        <div className="lg:col-span-2 flex flex-col gap-4 sm:gap-6">
 
           {/* Account Information */}
           <div id="account-info" className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm scroll-mt-6">

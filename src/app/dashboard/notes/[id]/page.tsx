@@ -459,7 +459,7 @@ export default function NoteDetailPage() {
   const SaveIcon = saveStatus.icon;
 
   return (
-    <div className={`w-full flex flex-col fade-in animate-in slide-in-from-bottom-4 duration-500 overflow-hidden h-[calc(100vh-120px)] lg:h-[calc(100vh-100px)] ${isZoomed ? 'note-zoomed' : ''}`}>
+    <div className={`w-full flex flex-col fade-in animate-in slide-in-from-bottom-4 duration-500 lg:overflow-hidden h-auto lg:h-[calc(100vh-100px)] ${isZoomed ? 'note-zoomed' : ''}`}>
       {/* Top bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4 shrink-0">
         <button onClick={() => router.push('/dashboard/notes')}
@@ -515,9 +515,9 @@ export default function NoteDetailPage() {
       </div>
 
       {/* Main Workspace Layout split into Editor & Panels */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_300px] flex-1 min-h-0 overflow-hidden mb-4">
+      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 lg:overflow-hidden mb-4">
         {/* Left Column: Title, Editor */}
-        <section className="flex flex-col min-w-0 h-full overflow-hidden">
+        <section className="flex flex-col min-w-0 flex-1 h-[550px] lg:h-full lg:overflow-hidden">
 
           {/* Title Area */}
           <div className="relative group flex items-center gap-3 mb-3 border-b border-transparent focus-within:border-slate-200 transition-colors pb-1 shrink-0">
@@ -548,7 +548,7 @@ export default function NoteDetailPage() {
         </section>
 
         {/* Right Column: Files & Collaboration Sidebars */}
-        <aside className="space-y-6 overflow-y-auto max-h-full pr-1 shrink-0 w-full lg:w-[300px] custom-scrollbar">
+        <aside className="space-y-6 overflow-y-auto lg:h-full pr-1 shrink-0 w-full lg:w-[300px] custom-scrollbar">
           {/* Files Panel */}
           <div className="bg-white/85 backdrop-blur-xl border border-slate-200/60 rounded-3xl p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
