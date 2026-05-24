@@ -59,8 +59,8 @@ export interface NoteShare {
   shared_with: number;
   permission: 'view' | 'edit';
   created_at: string;
-  recipient?: Pick<User, 'id' | 'name' | 'email' | 'avatar'>;
-  sharer?: Pick<User, 'id' | 'name' | 'email' | 'avatar'>;
+  recipient?: Pick<User, 'id' | 'name' | 'username' | 'email' | 'avatar'>;
+  sharer?: Pick<User, 'id' | 'name' | 'username' | 'email' | 'avatar'>;
 }
 
 export interface NoteVersion {
@@ -84,13 +84,14 @@ export interface Friendship {
   receiver_id: number;
   status: 'pending' | 'accepted' | 'rejected' | 'blocked';
   created_at: string;
-  sender?: Pick<User, 'id' | 'name' | 'email' | 'avatar'>;
-  receiver?: Pick<User, 'id' | 'name' | 'email' | 'avatar'>;
+  sender?: Pick<User, 'id' | 'name' | 'username' | 'email' | 'avatar'>;
+  receiver?: Pick<User, 'id' | 'name' | 'username' | 'email' | 'avatar'>;
 }
 
 export interface Friend {
   id: number;
   name: string;
+  username?: string;
   email: string;
   avatar: string | null;
   is_active?: boolean;

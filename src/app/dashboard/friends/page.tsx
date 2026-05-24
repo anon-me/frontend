@@ -12,7 +12,7 @@ export default function FriendsPage() {
   const [sent, setSent] = useState<Friendship[]>([]);
   const [searchResults, setSearchResults] = useState<Friend[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'friends' | 'requests' | 'add'>('friends');
 
@@ -40,9 +40,9 @@ export default function FriendsPage() {
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await friendsApi.sendRequest(email);
+      await friendsApi.sendRequest(username);
       toast.success('Friend request sent!');
-      setEmail('');
+      setUsername('');
       fetchData();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to send request');
@@ -151,7 +151,10 @@ export default function FriendsPage() {
     }
   };
 
-  const getUsername = (name?: string, id?: number) => {
+  const getUsername = (name?: string, id?: number, username?: string) => {
+    if (username && username.trim() !== '') {
+      return `@${username.trim()}`;
+    }
     if (!name || !id) return '';
     const base = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().split(/\s+/).join('_');
     const suffix = String(id).slice(-4).padStart(4, '0');
@@ -216,7 +219,7 @@ export default function FriendsPage() {
                             <div>
                               <h3 className="font-bold text-gray-900 text-lg leading-tight">{f.name}</h3>
                               <p className="text-sm font-medium mt-0.5 text-gray-500">
-                                {getUsername(f.name, f.id)}
+                                {getUsername(f.name, f.id, f.username)}
                               </p>
                             </div>
                           </div>
@@ -269,7 +272,7 @@ export default function FriendsPage() {
                             </div>
                             <div>
                               <h3 className="font-bold text-gray-900 text-lg leading-tight">{r.sender?.name}</h3>
-                              <p className="text-sm font-medium mt-0.5 text-gray-500">{getUsername(r.sender?.name, r.sender?.id)}</p>
+                              <p className="text-sm font-medium mt-0.5 text-gray-500">{getUsername(r.sender?.name, r.sender?.id, r.sender?.username)}</p>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -299,7 +302,7 @@ export default function FriendsPage() {
                             </div>
                             <div>
                               <h3 className="font-bold text-gray-900 text-lg leading-tight">{s.receiver?.name}</h3>
-                              <p className="text-sm font-medium mt-0.5 text-gray-500">{getUsername(s.receiver?.name, s.receiver?.id)} • Pending</p>
+                              <p className="text-sm font-medium mt-0.5 text-gray-500">{getUsername(s.receiver?.name, s.receiver?.id, s.receiver?.username)} • Pending</p>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -322,17 +325,17 @@ export default function FriendsPage() {
             <div className="bg-[#3b2dd4] rounded-[1.5rem] border border-[#3b2dd4] p-8 shadow-sm text-white">
               <div className="mb-6 border-b border-white/10 pb-5">
                 <h2 className="text-xl font-bold flex items-center gap-2 text-white"><UserPlus size={22} className="text-white" /> Add a Connection</h2>
-                <p className="text-sm text-indigo-100/90 mt-2">Connect with peers by searching their email or NotExA username.</p>
+                <p className="text-sm text-indigo-100/90 mt-2">Connect with peers by entering their NotExA username.</p>
               </div>
               
               <form onSubmit={handleSendRequest} className="flex flex-col sm:flex-row gap-3">
                 <div className="relative flex-1">
                   <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50" />
                   <input
-                    type="text" required value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text" required value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="w-full pl-11 pr-4 py-3.5 bg-white/10 rounded-xl border border-white/20 focus:ring-2 focus:ring-white/50 focus:bg-white/15 outline-none font-medium text-white transition-all placeholder:text-indigo-200/80"
-                    placeholder="Enter email or unique code"
+                    placeholder="Enter username"
                   />
                 </div>
                 <button type="submit" className="px-8 py-3.5 bg-white text-[#3b2dd4] rounded-xl font-bold hover:bg-gray-50 hover:shadow-lg active:scale-[0.98] transition-all whitespace-nowrap">

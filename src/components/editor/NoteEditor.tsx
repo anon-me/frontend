@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { publicApi, filesApi, notesApi } from '@/services/api';
+import api, { publicApi, filesApi, notesApi } from '@/services/api';
 
 interface NoteEditorProps {
   content: string;
@@ -492,6 +492,22 @@ export default function NoteEditor({ content, onChange, editable = true, noteId 
     const provider = selectedProvider;
     const model = selectedModel;
 
+    // 1. Try to delegate to the backend secure AI endpoint first if there is no personal key and noteId is present
+    const activeKey = provider === 'openai' ? config.openaiKey : (provider === 'deepseek' ? config.deepseekKey : config.geminiKey);
+    if (!activeKey && noteId) {
+      try {
+        const apiRes = await notesApi.aiQuery(noteId, { systemPrompt, userPrompt });
+        const data = apiRes.data?.data || apiRes.data || {};
+        const resultText = typeof data === 'string' ? data : (data.result || data.text || data.summary || '');
+        if (resultText) {
+          return resultText;
+        }
+      } catch (apiErr: any) {
+        console.warn("Backend secure AI query failed, falling back to client-side direct LLM call...", apiErr);
+      }
+    }
+
+    // 2. Client-side fallback using personal settings keys
     if (provider === 'openai') {
       if (!config.openaiKey) {
         throw new Error("OpenAI API key is missing. Please add it in Settings under 'Personal AI Workspace' or in the Admin Panel.");
@@ -1895,15 +1911,44 @@ export default function NoteEditor({ content, onChange, editable = true, noteId 
                         key={file.id}
                         onClick={async () => {
                           try {
+                            toast.loading(`Opening PDF study reader: ${file.original_name}...`, { id: 'pdf-split-loading' });
+                            
+                            // 1. Fetch pre-signed direct S3/R2 download URL from backend
                             const res = await filesApi.download(file.id);
-                            setActivePdfUrl(res.data?.download_url || `/api/files/${file.id}/download`);
+                            const downloadUrl = res.data?.download_url;
+                            
+                            if (!downloadUrl) throw new Error('Download URL not found');
+                            
+                            // 2. Fetch the direct URL as a blob to bypass attachment headers
+                            const blobResponse = await fetch(downloadUrl);
+                            if (!blobResponse.ok) throw new Error('Failed to fetch raw document data');
+                            
+                            const blob = await blobResponse.blob();
+                            // Force correct MIME type
+                            const pdfBlob = new Blob([blob], { type: file.mime_type || 'application/pdf' });
+                            const blobUrl = URL.createObjectURL(pdfBlob);
+                            
+                            setActivePdfUrl(blobUrl);
                             setActivePdfName(file.original_name);
                             setShowPdfSidebar(false);
+                            
                             const trigger = (window as any).triggerConfetti;
                             if (trigger) trigger();
-                            toast.success(`Opened split-screen PDF: ${file.original_name}`, { icon: '📚' });
+                            toast.success(`Opened split-screen PDF: ${file.original_name}`, { id: 'pdf-split-loading', icon: '📚' });
                           } catch (e) {
-                            toast.error("Failed to fetch download link for PDF file");
+                            console.error('PDF Split loading failed:', e);
+                            toast.error('Direct preview blocked by security. Trying direct load...', { id: 'pdf-split-loading' });
+                            // Fallback direct URL inside iframe
+                            try {
+                              const res = await filesApi.download(file.id);
+                              if (res.data?.download_url) {
+                                setActivePdfUrl(res.data.download_url);
+                                setActivePdfName(file.original_name);
+                                setShowPdfSidebar(false);
+                              }
+                            } catch (fallbackErr) {
+                              console.error('Fallback failed:', fallbackErr);
+                            }
                           }
                         }}
                         className={`w-full text-left p-3 border rounded-xl flex items-start gap-2.5 transition duration-200 hover:bg-pink-50/50 hover:border-pink-200 ${isSelected ? 'bg-pink-50 border-pink-300 shadow-sm shadow-pink-100' : 'bg-white border-slate-100'}`}

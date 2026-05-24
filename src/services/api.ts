@@ -68,6 +68,7 @@ export const notesApi = {
   regenerateCode: (id: number) => api.post(`/notes/${id}/regenerate-code`),
   redeemCode: (code: string) => api.post('/notes/redeem-code', { code }),
   aiSummary: (id: number) => api.post(`/notes/${id}/ai-summary`),
+  aiQuery: (id: number, data: { systemPrompt: string; userPrompt: string }) => api.post(`/notes/${id}/ai-query`, data),
   share: (noteId: number, d: any) => api.post(`/notes/${noteId}/share`, d),
   updatePermission: (noteId: number, userId: number, d: any) => api.put(`/notes/${noteId}/share/${userId}`, d),
   unshare: (noteId: number, userId: number) => api.delete(`/notes/${noteId}/share/${userId}`),
