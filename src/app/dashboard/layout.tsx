@@ -366,7 +366,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
 
         /* Sweet Bubbly Forms and Inputs - Perfect Pill Shapes */
-        .pookie-mode input, 
+        .pookie-mode input:not(.note-title-input), 
         .pookie-mode select {
           background-color: #fffafc !important;
           border: 2px solid #ffd1dc !important;
@@ -384,7 +384,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           transition: all 0.3s ease !important;
         }
 
-        .pookie-mode input:focus, 
+        .pookie-mode input:not(.note-title-input):focus, 
         .pookie-mode textarea:focus, 
         .pookie-mode select:focus {
           border-color: #ff69b4 !important;

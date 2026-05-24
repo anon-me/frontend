@@ -531,7 +531,7 @@ export default function NoteDetailPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               readOnly={!canEdit}
-              className="flex-1 w-full text-2xl lg:text-3xl font-extrabold text-slate-900 border-none outline-none bg-transparent placeholder:text-slate-300 tracking-tight focus:ring-0 px-0"
+              className="note-title-input flex-1 w-full text-2xl lg:text-3xl font-extrabold text-slate-900 border-none outline-none bg-transparent placeholder:text-slate-300 tracking-tight focus:ring-0 px-0"
               placeholder="Untitled Notebook..."
             />
           </div>
