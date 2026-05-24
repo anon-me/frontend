@@ -35,13 +35,29 @@ export default function FilesPage() {
   const handleViewFile = async (file: FileItem) => {
     try {
       const res = await filesApi.download(file.id);
-      const url = res.data.download_url || `/api/files/${file.id}/download`;
-      setViewerUrl(url);
+      const rawUrl: string = res.data.download_url || `/api/files/${file.id}/download`;
+      const isImage = file.mime_type?.startsWith('image/');
+      const isPdf = file.mime_type?.includes('pdf') || file.original_name?.toLowerCase().endsWith('.pdf');
+
       setViewerName(file.original_name);
-      setViewerIsImage(file.mime_type?.startsWith('image/') || false);
-      toast.success(`Opening reader: ${file.original_name}`, { icon: '📖' });
+      setViewerIsImage(!!isImage);
+
+      if (isImage) {
+        // Images render inline directly
+        setViewerUrl(rawUrl);
+      } else if (isPdf) {
+        // Use Google Docs Viewer to render the PDF inline, bypassing Content-Disposition: attachment
+        setViewerUrl(`https://docs.google.com/viewer?url=${encodeURIComponent(rawUrl)}&embedded=true`);
+      } else {
+        // For unsupported types, open in new tab and don't open the modal
+        window.open(rawUrl, '_blank');
+        toast(`Opening ${file.original_name} in a new tab`, { icon: '📄' });
+        return;
+      }
+
+      toast.success(`Opening preview: ${file.original_name}`, { icon: '📖' });
     } catch {
-      toast.error('Failed to open file viewer');
+      toast.error('Failed to open file preview');
     }
   };
 
@@ -71,10 +87,19 @@ export default function FilesPage() {
     }
   };
 
-  const handleDownload = async (fileId: number) => {
+  const handleDownload = async (file: FileItem) => {
     try {
-      const res = await filesApi.download(fileId);
-      window.open(res.data.download_url, '_blank');
+      const res = await filesApi.download(file.id);
+      const url: string = res.data.download_url || `/api/files/${file.id}/download`;
+      // Programmatic anchor click always triggers a download regardless of server headers
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.original_name;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success(`Downloading ${file.original_name}`, { icon: '⬇️' });
     } catch { toast.error('Download failed'); }
   };
 
@@ -151,7 +176,7 @@ export default function FilesPage() {
                     <Eye size={16} />
                   </button>
                 )}
-                <button onClick={() => handleDownload(file.id)} className="p-2 text-gray-400 hover:text-brand-600 transition"><Download size={16} /></button>
+                <button onClick={() => handleDownload(file)} title="Download" className="p-2 text-gray-400 hover:text-brand-600 transition"><Download size={16} /></button>
                 <button onClick={() => handleDelete(file.id)} className="p-2 text-gray-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
               </div>
             </div>

@@ -169,7 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     {user?.name || 'Scholar'}
                     {user?.is_premium && <Crown size={14} className="text-amber-500 fill-amber-500/20 shrink-0" />}
                   </p>
-                  <p className="text-xs font-bold text-slate-400 truncate uppercase tracking-widest mt-0.5">{user?.email || 'User'}</p>
+                  <p className="text-xs font-bold text-slate-400 truncate lowercase mt-0.5">{user?.email || 'User'}</p>
                 </div>
               )}
             </div>
